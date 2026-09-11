@@ -1,5 +1,5 @@
 <head>
-    <title>Vial Web</title>
+    <title>Vial Web — xtreemze Halcyon extensions</title>
     <link rel="icon" href="/icon.png" type="image/png">
 <style>
 body {
@@ -36,6 +36,20 @@ body {
     margin: 1em;
     color: #aaa;
     text-align: right;
+}
+#custom_build {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    z-index: 110;
+    margin: 0.75em;
+    padding: 0.4em 0.65em;
+    border-radius: 0.35em;
+    background: rgba(24, 24, 24, 0.82);
+    color: #ddd;
+    font-size: 12px;
+    line-height: 1.35;
+    pointer-events: none;
 }
 #unlock {
     position: fixed;
@@ -79,6 +93,11 @@ body {
         </div>
     </div>
     <div id="version">Vial: @VIAL_VER@<br>Web: @WEB_VER@<br>Support: @VIA_STACK_VER@</div>
+</div>
+
+<div id="custom_build">
+    xtreemze Halcyon extensions<br>
+    GUI @VIAL_VER@ · Web @WEB_VER@
 </div>
 
 <div id="unlock" style="display:none">
@@ -182,8 +201,6 @@ body {
             await stream.write(layout);
             await stream.close();
         } else {
-            // If the File System API isn't available, we can at least
-            // trigger a simple download with a hardcoded filename.
             const download = document.createElement('a');
             download.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(layout));
             download.setAttribute('download', 'layout.vil');
