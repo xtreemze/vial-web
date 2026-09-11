@@ -1,25 +1,128 @@
-name: CI
+name: Build and deploy Vial Web
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vial-web-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VIAL_GUI_REPOSITORY: https://github.com/xtreemze/vial-gui.git
+  VIAL_GUI_REF: aef8222a2d0429a183b2ed692d5f9efcfd383f08
+  VIA_STACK_REPOSITORY: https://github.com/vial-kb/via-keymap-precompiled.git
+  VIA_STACK_REF: 3bcf423c970300722a04113de1d20c901b177e42
+  COI_SERVICEWORKER_REF: 7b1d2a092d0d2dd2b7270b6f12f13605de26f214
 
 jobs:
-  build-linux:
+  build:
+    name: Build Vial Web
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout Vial Web
+        uses: actions/checkout@v6
 
-    - name: Build
-      run: |
-        git clone https://github.com/vial-kb/vial-gui.git
-        git clone https://github.com/vial-kb/via-keymap-precompiled.git
-        ./fetch-emsdk.sh
-        ./fetch-deps.sh
-        ./build-deps.sh
-        cd src
-        ./build.sh
+      - name: Checkout customized Vial GUI
+        shell: bash
+        run: |
+          git clone "$VIAL_GUI_REPOSITORY" vial-gui
+          git -C vial-gui checkout --detach "$VIAL_GUI_REF"
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: vial-web
-        path: src/build
+      - name: Checkout VIA compatibility stack
+        shell: bash
+        run: |
+          git clone "$VIA_STACK_REPOSITORY" via-keymap-precompiled
+          git -C via-keymap-precompiled checkout --detach "$VIA_STACK_REF"
+
+      - name: Cache Emscripten and compiled dependencies
+        id: dependency-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            emsdk
+            deps
+          key: vial-web-deps-${{ runner.os }}-${{ hashFiles('version.sh', 'fetch-emsdk.sh', 'fetch-deps.sh', 'build-deps.sh', 'patches/**') }}
+
+      - name: Build toolchain dependencies
+        if: steps.dependency-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          ./fetch-emsdk.sh
+          ./fetch-deps.sh
+          ./build-deps.sh
+
+      - name: Build customized Vial Web
+        shell: bash
+        run: |
+          cd src
+          ./build.sh
+
+      # Vial Web uses Emscripten pthreads. GitHub Pages cannot set the
+      # COOP/COEP response headers required for SharedArrayBuffer, so the
+      # deployment carries a pinned service-worker shim that establishes
+      # cross-origin isolation on this static host.
+      - name: Prepare GitHub Pages artifact
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location \
+            "https://raw.githubusercontent.com/gzuidhof/coi-serviceworker/${COI_SERVICEWORKER_REF}/coi-serviceworker.min.js" \
+            --output src/build/coi-serviceworker.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          index = Path("src/build/index.html")
+          html = index.read_text()
+          html = html.replace('href="/icon.png"', 'href="icon.png"')
+          marker = "<head>"
+          script = '<script src="coi-serviceworker.js"></script>'
+          if script not in html:
+              html = html.replace(marker, f"{marker}\n    {script}", 1)
+          index.write_text(html)
+          PY
+
+          touch src/build/.nojekyll
+
+      - name: Upload CI artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vial-web
+          path: src/build
+
+      - name: Configure GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: src/build
+
+  deploy:
+    name: Deploy Vial Web
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
