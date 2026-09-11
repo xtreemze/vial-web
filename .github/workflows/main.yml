@@ -20,11 +20,11 @@ concurrency:
 
 env:
   VIAL_GUI_REPOSITORY: https://github.com/xtreemze/vial-gui.git
-  VIAL_GUI_REF: 2bf665c4989cb700ef3ebd1b9ab17bffbf407a9a
+  VIAL_GUI_REF: bff82efab1c4c0905dd03a99f29108051d8c35df
   VIA_STACK_REPOSITORY: https://github.com/vial-kb/via-keymap-precompiled.git
   VIA_STACK_REF: 3bcf423c970300722a04113de1d20c901b177e42
   COI_SERVICEWORKER_REF: 7b1d2a092d0d2dd2b7270b6f12f13605de26f214
-  CUSTOM_BUILD_ID: xtreemze-halcyon-rgb-profiles-v1
+  CUSTOM_BUILD_ID: xtreemze-halcyon-control-center-v1
 
 jobs:
   build:
@@ -46,8 +46,9 @@ jobs:
         run: |
           test "$(git -C vial-gui rev-parse HEAD)" = "$VIAL_GUI_REF"
           grep -Fq 'from custom_main_window import CustomMainWindow as MainWindow' vial-gui/src/main/python/webmain.py
-          grep -Fq 'class ObservableRGBProfiles' vial-gui/src/main/python/custom_main_window.py
-          grep -Fq '"RGB Profiles"' vial-gui/src/main/python/custom_main_window.py
+          grep -Fq 'from editor.halcyon import HalcyonEditor' vial-gui/src/main/python/custom_main_window.py
+          grep -Fq 'class ObservableRGBProfiles' vial-gui/src/main/python/editor/halcyon.py
+          grep -Fq '"Encoder & Repeat"' vial-gui/src/main/python/editor/halcyon.py
           grep -Fq 'RGB_PROFILE_COMMAND = 0xF0' vial-gui/src/main/python/protocol/rgb_profiles.py
 
       - name: Checkout VIA compatibility stack
@@ -84,6 +85,7 @@ jobs:
         run: |
           grep -Fq 'xtreemze Halcyon extensions' src/build/index.html
           grep -aFq 'xtreemze extended RGB profile protocol v1 detected; controls are live.' src/build/main-*.data
+          grep -aFq 'Consistent ordered pairs' src/build/main-*.data
 
       # Vial Web uses Emscripten pthreads. GitHub Pages cannot set the
       # COOP/COEP response headers required for SharedArrayBuffer, so the
@@ -113,7 +115,11 @@ jobs:
 
           manifest = {
               "build": os.environ["CUSTOM_BUILD_ID"],
-              "features": ["extended-rgb-profiles-v1", "observable-custom-ui"],
+              "features": [
+                  "halcyon-control-center-v1",
+                  "extended-rgb-profiles-v1",
+                  "observable-custom-ui",
+              ],
               "vial_gui": os.environ["VIAL_GUI_REF"],
               "vial_web": subprocess.check_output(
                   ["git", "rev-parse", "HEAD"], text=True
