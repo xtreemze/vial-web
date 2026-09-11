@@ -20,7 +20,7 @@ concurrency:
 
 env:
   VIAL_GUI_REPOSITORY: https://github.com/xtreemze/vial-gui.git
-  VIAL_GUI_REF: aef8222a2d0429a183b2ed692d5f9efcfd383f08
+  VIAL_GUI_REF: 3b990102b3e7864c7f05f7d086f3c8c961f08856
   VIA_STACK_REPOSITORY: https://github.com/vial-kb/via-keymap-precompiled.git
   VIA_STACK_REF: 3bcf423c970300722a04113de1d20c901b177e42
   COI_SERVICEWORKER_REF: 7b1d2a092d0d2dd2b7270b6f12f13605de26f214
