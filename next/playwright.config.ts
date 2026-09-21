@@ -9,9 +9,7 @@ export default defineConfig({
   webServer: {
     command: "pnpm build && pnpm exec vite preview --host 127.0.0.1 --port 4173",
     port: 4173,
-    reuseExistingServer: !process.env.CI
+    reuseExistingServer: !process.env["CI"]
   },
-  projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } }
-  ]
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }]
 });
