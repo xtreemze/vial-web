@@ -15,10 +15,7 @@ body {
 }
 #startup {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     z-index: 90;
     display: flex;
     justify-content: center;
@@ -31,16 +28,16 @@ body {
 }
 #version {
     position: absolute;
-    right: 0;
-    bottom: 0;
+    inset-inline-end: 0;
+    inset-block-end: 0;
     margin: 1em;
     color: #aaa;
-    text-align: right;
+    text-align: end;
 }
 #custom_build {
     position: fixed;
-    left: 0;
-    bottom: 0;
+    inset-inline-start: 0;
+    inset-block-end: 0;
     z-index: 110;
     margin: 0.75em;
     padding: 0.4em 0.65em;
@@ -53,10 +50,7 @@ body {
 }
 #unlock {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     z-index: 100;
     background-color: rgba(0, 0, 0, 0.5);
     display: flex;
@@ -84,7 +78,7 @@ body {
 
 <div id="startup">
     <div id="startup_inner">
-        <input id="startup_btn" type="button" onclick="connect()" value="Start Vial" disabled="true" /><br>
+        <input id="startup_btn" type="button" value="Start Vial" disabled="true" /><br>
         <div id="error" style="display:none">
             <p id="error_msg"></p>
             <p>You can check web browser support at <a href="https://caniuse.com/webhid" target="_blank">caniuse.com</a>.<br>
@@ -110,7 +104,7 @@ body {
     </div>
 </div>
 
-<canvas id="canvas" oncontextmenu="return false;" tabindex="-1"></canvas>
+<canvas id="canvas" tabindex="-1"></canvas>
 
 <script>
     var Module = {};
@@ -205,13 +199,7 @@ body {
             download.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(layout));
             download.setAttribute('download', 'layout.vil');
 
-            if (document.createEvent) {
-                var event = document.createEvent('MouseEvents');
-                event.initEvent('click', true, true);
-                download.dispatchEvent(event);
-            } else {
-                download.click();
-            }
+            download.click();
         }
     }
 
@@ -268,8 +256,13 @@ body {
     function show_error(e) {
         document.getElementById("startup_btn").style.display = "none";
         document.getElementById("error").style.display = "";
-        document.getElementById("error_msg").innerHTML = e;
+        document.getElementById("error_msg").textContent = e;
     }
+
+    document.getElementById("startup_btn").addEventListener("click", connect);
+    Module.canvas.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+    });
 
     if (!("hid" in navigator)) {
         show_error("Your web browser does not support WebHID");
