@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DeviceState } from "./device-state";
+import type { DeviceState } from "./device-state.ts";
 
 describe("DeviceState", () => {
   it("represents a disconnected client without fabricating an identity", () => {
@@ -12,7 +12,7 @@ describe("DeviceState", () => {
     const state: DeviceState = {
       status: "error",
       operation: "permission",
-      message: "Permission was denied"
+      message: "Permission was denied",
     };
 
     expect(state.operation).toBe("permission");
