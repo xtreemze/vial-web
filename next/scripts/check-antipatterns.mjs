@@ -1,4 +1,4 @@
-import { readFile, readdir } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import process from "node:process";
 
@@ -17,7 +17,7 @@ const forbidden = [
 async function filesUnder(path) {
   const entries = await readdir(new URL(`${path}/`, root), { withFileTypes: true });
   const nested = await Promise.all(
-    entries.map(async (entry) => {
+    entries.map((entry) => {
       const child = join(path, entry.name);
       if (entry.isDirectory()) {
         return filesUnder(child);
