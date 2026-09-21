@@ -1,0 +1,43 @@
+name: Bootstrap web-native lockfile
+
+on:
+  push:
+    branches: ["feat/web-native-scaffold"]
+    paths:
+      - "next/package.json"
+      - ".github/workflows/bootstrap-web-native-lockfile.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feat/web-native-scaffold
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@12.5.1 --activate
+
+      - name: Generate deterministic lockfile
+        working-directory: next
+        run: pnpm install --lockfile-only
+
+      - name: Commit lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add next/pnpm-lock.yaml
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: generate web-native pnpm lockfile"
+          git push origin HEAD:feat/web-native-scaffold
