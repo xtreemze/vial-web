@@ -28,7 +28,7 @@ export function App() {
             <StatusCard title="UI" value="React 19.3" />
             <StatusCard title="Protocol" value="Typed boundary" />
             <StatusCard title="Transport" value="Not connected" />
-          </div>
+          </section>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button
@@ -56,9 +56,9 @@ interface StatusCardProps {
 
 function StatusCard({ title, value }: StatusCardProps) {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-4">
-      <dt className="text-sm text-[var(--muted)]">{title}</dt>
-      <dd className="mt-1 font-medium">{value}</dd>
-    </div>
+    <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-4">
+      <p className="text-sm text-[var(--muted)]">{title}</p>
+      <p className="mt-1 font-medium">{value}</p>
+    </article>
   );
 }
