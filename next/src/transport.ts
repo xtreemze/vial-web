@@ -10,15 +10,17 @@ export interface KeyboardIdentity {
 export interface KeyboardTransport {
   readonly identity: KeyboardIdentity | null;
 
-  requestDevice(): Promise<KeyboardIdentity | null>;
-  open(identity?: KeyboardIdentity): Promise<void>;
-  close(): Promise<void>;
+  readonly requestDevice: () => Promise<KeyboardIdentity | null>;
+  readonly open: (identity?: KeyboardIdentity) => Promise<void>;
+  readonly close: () => Promise<void>;
 
   /**
    * Send one protocol request and resolve with the matching response.
    * Protocol framing and command semantics belong above this layer.
    */
-  transact(request: HidMessage): Promise<HidMessage>;
+  readonly transact: (request: HidMessage) => Promise<HidMessage>;
 
-  subscribeDisconnect(listener: (identity: KeyboardIdentity | null) => void): () => void;
+  readonly subscribeDisconnect: (
+    listener: (identity: KeyboardIdentity | null) => void,
+  ) => () => void;
 }
