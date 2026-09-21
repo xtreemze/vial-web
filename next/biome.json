@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
   "plugins": [
     {
       "path": "./lint/no-ui-platform-boundaries.grit",
@@ -8,6 +8,10 @@
     {
       "path": "./lint/no-css-escape-hatches.grit",
       "includes": ["src/**/*.css"]
+    },
+    {
+      "path": "./lint/no-unsafe-type-assertions.grit",
+      "includes": ["src/**/*.ts", "src/**/*.tsx"]
     }
   ],
   "formatter": {
@@ -29,7 +33,11 @@
     "rules": {
       "preset": "all",
       "nursery": {
+        "noExtendNative": "error",
         "noRestrictedDependencies": "error",
+        "noReturnInFinally": "error",
+        "noTailwindArbitraryValue": "error",
+        "noUnmodifiedLoopCondition": "error",
         "useImportsFirst": "error",
         "useSortedClasses": "error"
       },
@@ -67,6 +75,6 @@
     }
   },
   "files": {
-    "includes": ["**", "!dist", "!playwright-report", "!test-results"]
+    "includes": ["**", "!!dist", "!!playwright-report", "!!test-results"]
   }
 }
