@@ -2,14 +2,10 @@ engine biome(1.0)
 language js(typescript, jsx)
 
 `$value as $type` as $assertion where {
-    !$assertion <: or {
-        `$_ as const`,
-        `$_ as unknown`,
-        `$_ as keyof $_`
-    },
-    register_diagnostic(
-        span = $assertion,
-        severity = "error",
-        message = "Avoid type assertions. Encode the invariant, narrow with a type guard, validate external data, or use satisfies. Only const/unknown/keyof assertions are allowed."
-    )
+  ! $assertion <: or {
+    `$_ as const`,
+    `$_ as unknown`,
+    `$_ as keyof $_`
+  },
+  register_diagnostic(span=$assertion, severity="error", message="Avoid type assertions. Encode the invariant, narrow with a type guard, validate external data, or use satisfies. Only const/unknown/keyof assertions are allowed.")
 }
