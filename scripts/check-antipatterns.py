@@ -69,6 +69,14 @@ RULES = (
         "!important is forbidden; fix cascade ownership/specificity instead.",
     ),
     (
+        "physical-horizontal-css",
+        re.compile(
+            r"\b(?:left|right|margin-left|margin-right|padding-left|padding-right|border-left|border-right)\s*:",
+            re.IGNORECASE,
+        ),
+        "Physical left/right CSS is forbidden; use logical properties.",
+    ),
+    (
         "typescript-escape-hatch",
         re.compile(r"\b(?:as\s+any|:\s*any\b|as\s+unknown\s+as\b)|@ts-(?:ignore|expect-error|nocheck)\b"),
         "Type escapes/suppressions are forbidden in the native TypeScript path.",
