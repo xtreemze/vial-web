@@ -20,11 +20,11 @@ concurrency:
 
 env:
   VIAL_GUI_REPOSITORY: https://github.com/xtreemze/vial-gui.git
-  VIAL_GUI_REF: 69840c021f3dfb872f92fb48080e9ff57581502d
+  VIAL_GUI_REF: 50623cd7c8271a40afa73bc214dd7b190e9a39a2
   VIA_STACK_REPOSITORY: https://github.com/vial-kb/via-keymap-precompiled.git
   VIA_STACK_REF: 3bcf423c970300722a04113de1d20c901b177e42
   COI_SERVICEWORKER_REF: 7b1d2a092d0d2dd2b7270b6f12f13605de26f214
-  CUSTOM_BUILD_ID: xtreemze-halcyon-live-settings-v1
+  CUSTOM_BUILD_ID: xtreemze-halcyon-native-controls-v2
 
 jobs:
   build:
@@ -46,13 +46,14 @@ jobs:
         run: |
           test "$(git -C vial-gui rev-parse HEAD)" = "$VIAL_GUI_REF"
           grep -Fq 'from custom_main_window import CustomMainWindow as MainWindow' vial-gui/src/main/python/webmain.py
-          grep -Fq 'from editor.halcyon import HalcyonEditor' vial-gui/src/main/python/custom_main_window.py
-          grep -Fq 'class ObservableRGBProfiles' vial-gui/src/main/python/editor/halcyon.py
-          grep -Fq '"Encoder & Repeat"' vial-gui/src/main/python/editor/halcyon.py
-          grep -Fq 'HALCYON_SETTINGS_COMMAND = 0xF1' vial-gui/src/main/python/protocol/halcyon_settings.py
-          grep -Fq 'Save to Keyboard' vial-gui/src/main/python/editor/halcyon.py
-          grep -Fq 'Refresh Telemetry' vial-gui/src/main/python/editor/halcyon.py
+          grep -Fq 'from editor.halcyon_control_center import HalcyonEditor' vial-gui/src/main/python/custom_main_window.py
           grep -Fq 'RGB_PROFILE_COMMAND = 0xF0' vial-gui/src/main/python/protocol/rgb_profiles.py
+          grep -Fq 'HALCYON_SETTINGS_COMMAND = 0xF1' vial-gui/src/main/python/protocol/halcyon_settings.py
+          grep -Fq 'HALCYON_DISPLAY_COMMAND = 0xF2' vial-gui/src/main/python/protocol/halcyon_display.py
+          grep -Fq '"TFT Layers"' vial-gui/src/main/python/editor/halcyon_control_center.py
+          grep -Fq '"TFT Modifiers"' vial-gui/src/main/python/editor/halcyon_control_center.py
+          grep -Fq '"Save to Keyboard"' vial-gui/src/main/python/editor/halcyon_control_center.py
+          grep -Fq '"Host and split telemetry"' vial-gui/src/main/python/editor/halcyon_control_center.py
 
       - name: Checkout VIA compatibility stack
         shell: bash
@@ -87,11 +88,13 @@ jobs:
         shell: bash
         run: |
           grep -Fq 'xtreemze Halcyon extensions' src/build/index.html
-          grep -aFq 'xtreemze extended RGB profile protocol v1 detected; controls are live.' src/build/main-*.data
-          grep -aFq 'Consistent ordered pairs' src/build/main-*.data
+          grep -aFq 'RGB Profiles v1 detected' src/build/main-*.data
+          grep -aFq 'TFT Layers' src/build/main-*.data
+          grep -aFq 'TFT Modifiers' src/build/main-*.data
           grep -aFq 'Save to Keyboard' src/build/main-*.data
-          grep -aFq 'Refresh Telemetry' src/build/main-*.data
+          grep -aFq 'Host and split telemetry' src/build/main-*.data
           grep -aFq 'HALCYON_SETTINGS_COMMAND' src/build/main-*.data
+          grep -aFq 'HALCYON_DISPLAY_COMMAND' src/build/main-*.data
 
       # Vial Web uses Emscripten pthreads. GitHub Pages cannot set the
       # COOP/COEP response headers required for SharedArrayBuffer, so the
@@ -122,8 +125,9 @@ jobs:
           manifest = {
               "build": os.environ["CUSTOM_BUILD_ID"],
               "features": [
-                  "halcyon-control-center-v1",
-                  "halcyon-live-settings-v1",
+                  "halcyon-native-controls-v2",
+                  "halcyon-settings-v1",
+                  "halcyon-display-v1",
                   "extended-rgb-profiles-v1",
                   "observable-custom-ui",
               ],
@@ -155,6 +159,9 @@ jobs:
 
       - name: Upload GitHub Pages artifact
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        # v4 still embeds upload-artifact@v4 (Node 20). Upstream main has
+        # migrated to the Node-24-native upload-artifact@v7 but has not yet
+        # published a replacement major, so pin the verified upstream commit.
         uses: actions/upload-pages-artifact@98ef48e41587a300b82de4cf298aa98b57b2faae
         with:
           path: src/build
