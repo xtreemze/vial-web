@@ -36,5 +36,5 @@ body {
   min-height: 100dvh;
   background:
     radial-gradient(circle at 15% 15%, rgb(120 120 110 / 10%), transparent 28rem),
-    var(--background, #f4f4f2);
+    var(--background);
 }
