@@ -8,7 +8,7 @@ export function App() {
     <main className="min-h-dvh bg-zinc-950 text-zinc-100">
       <section className="mx-auto flex min-h-dvh max-w-5xl flex-col justify-center gap-8 px-6 py-10">
         <header className="space-y-3">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-400">
+          <p className="text-sm font-medium uppercase tracking-widest text-zinc-400">
             Vial next
           </p>
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
