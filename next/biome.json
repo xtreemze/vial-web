@@ -49,7 +49,6 @@
       "nursery": {
         "noExtendNative": "error",
         "noRestrictedDependencies": "error",
-        "noReturnInFinally": "error",
         "noTailwindArbitraryValue": "error",
         "noUnmodifiedLoopCondition": "error",
         "useImportsFirst": "error",
