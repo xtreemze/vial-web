@@ -24,7 +24,7 @@ export function App() {
             </p>
           </header>
 
-          <div className="grid gap-4 md:grid-cols-3" aria-label="Migration status">
+          <section className="grid gap-4 md:grid-cols-3" aria-label="Migration status">
             <StatusCard title="UI" value="React 19.3" />
             <StatusCard title="Protocol" value="Typed boundary" />
             <StatusCard title="Transport" value="Not connected" />
