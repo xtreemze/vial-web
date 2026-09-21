@@ -60,7 +60,7 @@
                   "semantic-ui-react",
                   "styled-components"
                 ],
-                "message": "Do not add a competing UI/styling system. Extend React Aria + source-owned Tailwind primitives, or document the missing capability before changing this policy."
+                "message": "Do not add a competing UI/styling system. Prefer native platform controls; introduce the approved accessibility primitive layer only when a concrete interaction requires it and its types satisfy strict compilation."
               }
             ]
           }
