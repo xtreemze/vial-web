@@ -2,14 +2,8 @@
   "compilerOptions": {
     "target": "ES2025",
     "useDefineForClassFields": true,
-    "lib": [
-      "ES2025",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "vite/client"
-    ],
+    "lib": ["ES2025", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
     "allowJs": false,
     "skipLibCheck": false,
     "esModuleInterop": true,
@@ -39,7 +33,5 @@
     "allowImportingTsExtensions": true,
     "useUnknownInCatchVariables": true
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }
