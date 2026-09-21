@@ -22,7 +22,7 @@ export function App() {
 
         <section
           aria-labelledby="device-status-heading"
-          className="grid gap-4 rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 sm:grid-cols-[1fr_auto] sm:items-center"
+          className="flex flex-col gap-4 rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
             <h2 id="device-status-heading" className="font-medium">
