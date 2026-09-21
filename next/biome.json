@@ -3,15 +3,29 @@
   "plugins": [
     {
       "path": "./lint/no-ui-platform-boundaries.grit",
-      "includes": ["src/ui/**"]
+      "includes": [
+        "src/ui/**"
+      ]
     },
     {
       "path": "./lint/no-css-escape-hatches.grit",
-      "includes": ["src/**/*.css"]
+      "includes": [
+        "src/**/*.css"
+      ]
     },
     {
       "path": "./lint/no-unsafe-type-assertions.grit",
-      "includes": ["src/**/*.ts", "src/**/*.tsx"]
+      "includes": [
+        "src/**/*.ts",
+        "src/**/*.tsx"
+      ]
+    },
+    {
+      "path": "./lint/no-platform-branching.grit",
+      "includes": [
+        "src/**/*.ts",
+        "src/**/*.tsx"
+      ]
     }
   ],
   "formatter": {
@@ -75,6 +89,11 @@
     }
   },
   "files": {
-    "includes": ["**", "!!dist", "!!playwright-report", "!!test-results"]
+    "includes": [
+      "**",
+      "!!dist",
+      "!!playwright-report",
+      "!!test-results"
+    ]
   }
 }
