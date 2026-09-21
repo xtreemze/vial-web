@@ -2,25 +2,25 @@ engine biome(1.0)
 language js(typescript, jsx)
 
 or {
-    `navigator.userAgent` as $bad where {
-        register_diagnostic(span = $bad, severity = "error", message = "Do not branch on user-agent strings. Detect capabilities at explicit platform boundaries.")
-    },
-    `navigator.platform` as $bad where {
-        register_diagnostic(span = $bad, severity = "error", message = "Do not branch on platform identity. Encode supported behavior through capabilities/domain state.")
-    },
-    `navigator.vendor` as $bad where {
-        register_diagnostic(span = $bad, severity = "error", message = "Do not branch on browser vendor identity.")
-    },
-    `window.innerWidth` as $bad where {
-        register_diagnostic(span = $bad, severity = "error", message = "Do not drive responsive UI from viewport-width JavaScript. Prefer CSS/container queries or ResizeObserver for geometry.")
-    },
-    `window.innerHeight` as $bad where {
-        register_diagnostic(span = $bad, severity = "error", message = "Do not drive responsive UI from viewport-height JavaScript. Prefer CSS/container queries or ResizeObserver for geometry.")
-    },
-    `screen.width` as $bad where {
-        register_diagnostic(span = $bad, severity = "error", message = "Do not infer device classes from screen dimensions.")
-    },
-    `screen.height` as $bad where {
-        register_diagnostic(span = $bad, severity = "error", message = "Do not infer device classes from screen dimensions.")
-    }
+  `navigator.userAgent` as $bad where {
+    register_diagnostic(span=$bad, severity="error", message="Do not branch on user-agent strings. Detect capabilities at explicit platform boundaries.")
+  },
+  `navigator.platform` as $bad where {
+    register_diagnostic(span=$bad, severity="error", message="Do not branch on platform identity. Encode supported behavior through capabilities/domain state.")
+  },
+  `navigator.vendor` as $bad where {
+    register_diagnostic(span=$bad, severity="error", message="Do not branch on browser vendor identity.")
+  },
+  `window.innerWidth` as $bad where {
+    register_diagnostic(span=$bad, severity="error", message="Do not drive responsive UI from viewport-width JavaScript. Prefer CSS/container queries or ResizeObserver for geometry.")
+  },
+  `window.innerHeight` as $bad where {
+    register_diagnostic(span=$bad, severity="error", message="Do not drive responsive UI from viewport-height JavaScript. Prefer CSS/container queries or ResizeObserver for geometry.")
+  },
+  `screen.width` as $bad where {
+    register_diagnostic(span=$bad, severity="error", message="Do not infer device classes from screen dimensions.")
+  },
+  `screen.height` as $bad where {
+    register_diagnostic(span=$bad, severity="error", message="Do not infer device classes from screen dimensions.")
+  }
 }
