@@ -1,0 +1,19 @@
+engine biome(1.0)
+language css
+
+or {
+    CssDeclarationWithSemicolon() as $declaration where {
+        $declaration <: contains CssDeclarationImportant(),
+        register_diagnostic(
+            span = $declaration,
+            message = "Do not use !important. Resolve specificity through component structure, variants, or tokens."
+        )
+    },
+    CssDeclarationWithSemicolon() as $declaration where {
+        $declaration <: r".*#[0-9a-fA-F]{3,8}.*",
+        register_diagnostic(
+            span = $declaration,
+            message = "Do not hardcode hex colors in application CSS. Use source-owned design tokens or Tailwind theme variables."
+        )
+    }
+}
