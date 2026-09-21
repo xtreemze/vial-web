@@ -11,10 +11,11 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
-    "check": "biome check --error-on-warnings .",
-    "check:ci": "biome ci --error-on-warnings .",
+    "check": "pnpm lint:policy && biome check --error-on-warnings .",
+    "check:ci": "pnpm lint:policy && biome ci --error-on-warnings .",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "lint:policy": "node scripts/check-antipatterns.mjs"
   },
   "dependencies": {
     "react": "19.3.0",
