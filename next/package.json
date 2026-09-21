@@ -12,7 +12,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "check": "biome check --error-on-warnings .",
-    "check:ci": "biome ci --error-on-warnings --reporter=github .",
+    "check:ci": "biome ci --error-on-warnings .",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },
