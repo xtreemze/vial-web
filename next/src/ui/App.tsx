@@ -1,4 +1,3 @@
-import { Button } from "react-aria-components";
 import type { DeviceState } from "../device-state";
 
 const initialState: DeviceState = { status: "disconnected" };
@@ -31,12 +30,13 @@ export function App() {
             <p className="mt-1 text-sm text-zinc-400">Status: {initialState.status}</p>
           </div>
 
-          <Button
-            isDisabled
+          <button
+            type="button"
+            disabled
             className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-500 outline-none"
           >
             Connect keyboard
-          </Button>
+          </button>
         </section>
       </section>
     </main>
