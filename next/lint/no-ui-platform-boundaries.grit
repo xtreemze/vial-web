@@ -1,0 +1,30 @@
+engine biome(1.0)
+language js(typescript, jsx)
+
+or {
+    `navigator.hid` as $boundary where {
+        register_diagnostic(
+            span = $boundary,
+            message = "React/UI code must not access WebHID directly. Route device access through the application/controller boundary."
+        )
+    },
+    `HIDDevice` as $boundary where {
+        register_diagnostic(
+            span = $boundary,
+            message = "React/UI code must not depend on raw WebHID types. Keep HID objects inside the platform transport layer."
+        )
+    },
+    `HIDInputReportEvent` as $boundary where {
+        register_diagnostic(
+            span = $boundary,
+            message = "React/UI code must not depend on raw WebHID events. Translate them inside the platform transport layer."
+        )
+    },
+    `import $_ from $source` where {
+        $source <: or { r".*transport.*", r".*protocol.*", r".*webhid.*", r".*/hid.*" },
+        register_diagnostic(
+            span = $source,
+            message = "UI modules may not import transport, protocol, or WebHID implementation modules directly. Depend on a higher-level application boundary."
+        )
+    }
+}
