@@ -36,5 +36,6 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
-  background: radial-gradient(circle at 15% 15%, rgb(120 120 110 / 10%), transparent 28rem), var(--background);
+  background:
+    radial-gradient(circle at 15% 15%, rgb(120 120 110 / 10%), transparent 28rem), var(--background);
 }
