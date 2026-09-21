@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { DeviceState } from "../device-state.ts";
 
 const initialState: DeviceState = { status: "disconnected" };
@@ -13,13 +14,16 @@ const copy = {
 };
 
 export function App() {
+  const deviceStatusHeadingId = useId();
   const statusText = `${copy.statusLabel}: ${initialState.status}`;
 
   return (
     <main className="min-h-dvh bg-zinc-950 text-zinc-100">
       <section className="mx-auto flex min-h-dvh max-w-5xl flex-col justify-center gap-8 px-6 py-10">
         <header className="space-y-3">
-          <p className="font-medium text-sm text-zinc-400 uppercase tracking-widest">{copy.eyebrow}</p>
+          <p className="font-medium text-sm text-zinc-400 uppercase tracking-widest">
+            {copy.eyebrow}
+          </p>
           <h1 className="text-balance font-semibold text-4xl tracking-tight sm:text-5xl">
             {copy.title}
           </h1>
@@ -29,11 +33,11 @@ export function App() {
         </header>
 
         <section
-          aria-labelledby="device-status-heading"
+          aria-labelledby={deviceStatusHeadingId}
           className="flex flex-col gap-4 rounded-3xl border border-zinc-800 bg-zinc-900/70 p-5 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <h2 id="device-status-heading" className="font-medium">
+            <h2 id={deviceStatusHeadingId} className="font-medium">
               {copy.deviceHeading}
             </h2>
             <p className="mt-1 text-sm text-zinc-400">{statusText}</p>
