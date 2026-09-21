@@ -1,5 +1,15 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+  "plugins": [
+    {
+      "path": "./lint/no-ui-platform-boundaries.grit",
+      "includes": ["src/ui/**"]
+    },
+    {
+      "path": "./lint/no-css-escape-hatches.grit",
+      "includes": ["src/**/*.css"]
+    }
+  ],
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -8,8 +18,46 @@
   },
   "linter": {
     "enabled": true,
+    "domains": {
+      "playwright": "all",
+      "project": "all",
+      "react": "all",
+      "tailwind": "all",
+      "test": "all",
+      "types": "all"
+    },
     "rules": {
-      "recommended": true
+      "preset": "all",
+      "nursery": {
+        "noRestrictedDependencies": "error",
+        "useImportsFirst": "error",
+        "useSortedClasses": "error"
+      },
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "patterns": [
+              {
+                "group": [
+                  "@chakra-ui/**",
+                  "@emotion/**",
+                  "@mui/**",
+                  "antd",
+                  "antd/**",
+                  "bootstrap",
+                  "bootstrap/**",
+                  "react-bootstrap",
+                  "react-bootstrap/**",
+                  "semantic-ui-react",
+                  "styled-components"
+                ],
+                "message": "Do not add a competing UI/styling system. Extend React Aria + source-owned Tailwind primitives, or document the missing capability before changing this policy."
+              }
+            ]
+          }
+        }
+      }
     }
   },
   "javascript": {
