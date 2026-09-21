@@ -45,8 +45,8 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Biome
-        run: pnpm check
+      - name: Biome strict policy
+        run: pnpm check:ci
 
       - name: Unit tests
         run: pnpm test
