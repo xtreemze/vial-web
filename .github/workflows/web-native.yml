@@ -1,0 +1,57 @@
+name: Web-native client
+
+on:
+  pull_request:
+    paths:
+      - "next/**"
+      - ".github/workflows/web-native.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "next/**"
+      - ".github/workflows/web-native.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: next
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          cache-dependency-path: next/pnpm-lock.yaml
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@12.5.1 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Static checks
+        run: pnpm check
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser smoke test
+        run: pnpm e2e
