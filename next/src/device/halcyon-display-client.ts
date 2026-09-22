@@ -23,6 +23,12 @@ const CAP_LAYER_LABELS = 1 << 0;
 const CAP_MODIFIER_LABELS = 1 << 1;
 const CAP_PATTERNS = 1 << 2;
 
+function requireIndex(index: number, count: number, label: string): void {
+  if (!Number.isInteger(index) || index < 0 || index >= count) {
+    throw new RangeError(`${label} index ${index} is out of range`);
+  }
+}
+
 class HalcyonDisplayClient {
   readonly capabilities: HalcyonDisplayCapabilities;
   readonly #transport: KeyboardTransport;
@@ -41,16 +47,10 @@ class HalcyonDisplayClient {
     }
   }
 
-  #requireIndex(index: number, count: number, label: string): void {
-    if (!Number.isInteger(index) || index < 0 || index >= count) {
-      throw new RangeError(`${label} index ${index} is out of range`);
-    }
-  }
-
   async getLayer(index: number): Promise<DisplayLayer> {
     this.#requireFlag(CAP_LAYER_LABELS, "Halcyon layer labels");
     this.#requireFlag(CAP_PATTERNS, "Halcyon display patterns");
-    this.#requireIndex(index, this.capabilities.layerCount, "layer");
+    requireIndex(index, this.capabilities.layerCount, "layer");
     return transactDecoded(
       this.#transport,
       getHalcyonDisplayLayerRequest(index),
@@ -62,7 +62,7 @@ class HalcyonDisplayClient {
   async setLayer(index: number, layer: DisplayLayer): Promise<void> {
     this.#requireFlag(CAP_LAYER_LABELS, "Halcyon layer labels");
     this.#requireFlag(CAP_PATTERNS, "Halcyon display patterns");
-    this.#requireIndex(index, this.capabilities.layerCount, "layer");
+    requireIndex(index, this.capabilities.layerCount, "layer");
     await transactAcknowledged(
       this.#transport,
       setHalcyonDisplayLayerRequest(
@@ -77,7 +77,7 @@ class HalcyonDisplayClient {
 
   async getModifierLabel(index: number): Promise<string> {
     this.#requireFlag(CAP_MODIFIER_LABELS, "Halcyon modifier labels");
-    this.#requireIndex(index, this.capabilities.modifierCount, "modifier");
+    requireIndex(index, this.capabilities.modifierCount, "modifier");
     return transactDecoded(
       this.#transport,
       getHalcyonModifierLabelRequest(index),
@@ -91,7 +91,7 @@ class HalcyonDisplayClient {
 
   async setModifierLabel(index: number, label: string): Promise<void> {
     this.#requireFlag(CAP_MODIFIER_LABELS, "Halcyon modifier labels");
-    this.#requireIndex(index, this.capabilities.modifierCount, "modifier");
+    requireIndex(index, this.capabilities.modifierCount, "modifier");
     await transactAcknowledged(
       this.#transport,
       setHalcyonModifierLabelRequest(
