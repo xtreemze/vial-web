@@ -4,189 +4,59 @@ import type {
   KeyboardTransport,
   KeyboardTransportSupport,
 } from "../../transport.ts";
+import {
+  copyReport,
+  describeFailure,
+  deviceMatchesIdentity,
+  identityFromDevice,
+  isWebHidPort,
+  normalizePermissionFailure,
+  SUPPORTED_TRANSPORT,
+  WebHidTransportError,
+} from "./WebHidTypes.ts";
+import type {
+  WebHidDevicePort,
+  WebHidDisconnectListener,
+  WebHidInputReportListener,
+  WebHidPort,
+  WebHidTransportOptions,
+} from "./WebHidTypes.ts";
 
-const VIAL_USAGE_PAGE = 0xff60;
+const VIAL_USAGE_PAGE = 0xff_60;
 const VIAL_USAGE = 0x61;
 const REPORT_ID = 0;
 const REPORT_LENGTH = 32;
 const RESPONSE_TIMEOUT_MS = 500;
 
-export type WebHidTransportErrorCode =
-  | "permission-denied"
-  | "device-not-found"
-  | "ambiguous-device"
-  | "open-failed"
-  | "transport-closed"
-  | "request-too-large"
-  | "response-timeout"
-  | "invalid-response"
-  | "io-failed"
-  | "unsupported";
-
-export class WebHidTransportError extends Error {
-  readonly code: WebHidTransportErrorCode;
-
-  constructor(code: WebHidTransportErrorCode, message: string) {
-    super(message);
-    this.name = "WebHidTransportError";
-    this.code = code;
+function unsupportedMessage(
+  reason: "insecure-context" | "webhid-unavailable-or-blocked",
+): string {
+  if (reason === "insecure-context") {
+    return "WebHID requires a secure HTTPS context.";
   }
-}
-
-interface WebHidDeviceFilter {
-  readonly usagePage: number;
-  readonly usage: number;
-}
-
-interface WebHidRequestOptions {
-  readonly filters: readonly WebHidDeviceFilter[];
-}
-
-export interface WebHidInputReportEventPort {
-  readonly data: DataView;
-  readonly reportId: number;
-}
-
-export type WebHidInputReportListener = (event: WebHidInputReportEventPort) => void;
-
-export interface WebHidDevicePort {
-  readonly vendorId: number;
-  readonly productId: number;
-  readonly productName: string;
-  readonly opened: boolean;
-
-  readonly open: () => Promise<void>;
-  readonly close: () => Promise<void>;
-  readonly sendReport: (reportId: number, data: Uint8Array) => Promise<void>;
-  readonly addEventListener: (
-    type: "inputreport",
-    listener: WebHidInputReportListener,
-  ) => void;
-  readonly removeEventListener: (
-    type: "inputreport",
-    listener: WebHidInputReportListener,
-  ) => void;
-}
-
-export interface WebHidConnectionEventPort {
-  readonly device: WebHidDevicePort;
-}
-
-export type WebHidDisconnectListener = (event: WebHidConnectionEventPort) => void;
-
-export interface WebHidPort {
-  readonly requestDevice: (
-    options: WebHidRequestOptions,
-  ) => Promise<readonly WebHidDevicePort[]>;
-  readonly getDevices: () => Promise<readonly WebHidDevicePort[]>;
-  readonly addEventListener: (
-    type: "disconnect",
-    listener: WebHidDisconnectListener,
-  ) => void;
-  readonly removeEventListener: (
-    type: "disconnect",
-    listener: WebHidDisconnectListener,
-  ) => void;
-}
-
-const supported = { status: "supported" } satisfies KeyboardTransportSupport;
-
-function identityFromDevice(device: WebHidDevicePort): KeyboardIdentity {
-  if (device.productName.length === 0) {
-    return {
-      vendorId: device.vendorId,
-      productId: device.productId,
-    };
-  }
-
-  return {
-    vendorId: device.vendorId,
-    productId: device.productId,
-    productName: device.productName,
-  };
-}
-
-function deviceMatchesIdentity(
-  device: WebHidDevicePort,
-  identity: KeyboardIdentity,
-): boolean {
-  if (identity.serialNumber !== undefined) {
-    return false;
-  }
-
-  return (
-    device.vendorId === identity.vendorId &&
-    device.productId === identity.productId &&
-    (identity.productName === undefined || device.productName === identity.productName)
-  );
-}
-
-function copyReport(data: DataView): Uint8Array {
-  return Uint8Array.from(
-    { length: data.byteLength },
-    (_unused, index) => data.getUint8(index),
-  );
-}
-
-function describeFailure(error: unknown): string {
-  return error instanceof Error ? error.message : "Unknown WebHID failure";
-}
-
-function normalizePermissionFailure(error: unknown): WebHidTransportError {
-  if (
-    error instanceof DOMException &&
-    (error.name === "NotAllowedError" || error.name === "SecurityError")
-  ) {
-    return new WebHidTransportError(
-      "permission-denied",
-      "WebHID permission was denied or is blocked by browser policy.",
-    );
-  }
-
-  return new WebHidTransportError(
-    "io-failed",
-    `WebHID device selection failed: ${describeFailure(error)}`,
-  );
+  return "WebHID is unavailable or blocked by browser permissions policy.";
 }
 
 function createUnsupportedTransport(
   reason: "insecure-context" | "webhid-unavailable-or-blocked",
 ): KeyboardTransport {
-  const support = { status: "unsupported", reason } satisfies KeyboardTransportSupport;
-
-  const unsupported = () =>
-    new WebHidTransportError(
-      "unsupported",
-      reason === "insecure-context"
-        ? "WebHID requires a secure HTTPS context."
-        : "WebHID is unavailable or blocked by browser permissions policy.",
-    );
+  const support: KeyboardTransportSupport = { status: "unsupported", reason };
+  const unsupported = (): WebHidTransportError =>
+    new WebHidTransportError("unsupported", unsupportedMessage(reason));
 
   return {
     identity: null,
     support,
-    requestDevice: () => Promise.reject(unsupported()),
-    open: () => Promise.reject(unsupported()),
-    close: () => Promise.resolve(),
-    transact: () => Promise.reject(unsupported()),
-    subscribeDisconnect: () => () => undefined,
+    requestDevice: (): Promise<KeyboardIdentity | null> =>
+      Promise.reject(unsupported()),
+    open: (): Promise<void> => Promise.reject(unsupported()),
+    close: (): Promise<void> => Promise.resolve(),
+    transact: (): Promise<HidMessage> => Promise.reject(unsupported()),
+    subscribeDisconnect: (): (() => void) => (): void => undefined,
   };
 }
 
-function isWebHidPort(value: unknown): value is WebHidPort {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  return (
-    typeof Reflect.get(value, "requestDevice") === "function" &&
-    typeof Reflect.get(value, "getDevices") === "function" &&
-    typeof Reflect.get(value, "addEventListener") === "function" &&
-    typeof Reflect.get(value, "removeEventListener") === "function"
-  );
-}
-
-export function createBrowserWebHidTransport(): KeyboardTransport {
+function createBrowserWebHidTransport(): KeyboardTransport {
   if (!globalThis.isSecureContext) {
     return createUnsupportedTransport("insecure-context");
   }
@@ -204,11 +74,7 @@ export function createBrowserWebHidTransport(): KeyboardTransport {
   return createWebHidTransport(candidate);
 }
 
-interface WebHidTransportOptions {
-  readonly responseTimeoutMs?: number;
-}
-
-export function createWebHidTransport(
+function createWebHidTransport(
   hid: WebHidPort,
   options: WebHidTransportOptions = {},
 ): KeyboardTransport {
@@ -216,12 +82,18 @@ export function createWebHidTransport(
   let selectedDevice: WebHidDevicePort | null = null;
   let transactionTail: Promise<void> = Promise.resolve();
   let activeTransactionAbort: ((error: WebHidTransportError) => void) | null = null;
-  const disconnectListeners = new Set<(identity: KeyboardIdentity | null) => void>();
+  const disconnectListeners: Set<
+    (identity: KeyboardIdentity | null) => void
+  > = new Set();
 
-  const currentIdentity = (): KeyboardIdentity | null =>
-    selectedDevice === null ? null : identityFromDevice(selectedDevice);
+  const currentIdentity = (): KeyboardIdentity | null => {
+    if (selectedDevice === null) {
+      return null;
+    }
+    return identityFromDevice(selectedDevice);
+  };
 
-  const disconnectListener: WebHidDisconnectListener = (event) => {
+  const disconnectListener: WebHidDisconnectListener = (event): void => {
     if (event.device !== selectedDevice) {
       return;
     }
@@ -229,12 +101,14 @@ export function createWebHidTransport(
     const disconnectedIdentity = identityFromDevice(event.device);
     selectedDevice = null;
 
-    activeTransactionAbort?.(
-      new WebHidTransportError(
-        "transport-closed",
-        "The selected HID device disconnected during communication.",
-      ),
-    );
+    if (activeTransactionAbort !== null) {
+      activeTransactionAbort(
+        new WebHidTransportError(
+          "transport-closed",
+          "The selected HID device disconnected during communication.",
+        ),
+      );
+    }
 
     for (const listener of disconnectListeners) {
       listener(disconnectedIdentity);
@@ -283,7 +157,9 @@ export function createWebHidTransport(
     }
 
     const granted = await hid.getDevices();
-    const matches = granted.filter((device) => deviceMatchesIdentity(device, identity));
+    const matches = granted.filter(
+      (device): boolean => deviceMatchesIdentity(device, identity),
+    );
 
     if (matches.length === 0) {
       throw new WebHidTransportError(
@@ -378,13 +254,13 @@ export function createWebHidTransport(
     let timeoutId: number | null = null;
     let inputListener: WebHidInputReportListener | null = null;
 
-    const response = new Promise<HidMessage>((resolve, reject) => {
-      const abort = (error: WebHidTransportError) => {
+    const response = new Promise<HidMessage>((resolve, reject): void => {
+      const abort = (error: WebHidTransportError): void => {
         reject(error);
       };
       activeTransactionAbort = abort;
 
-      inputListener = (event) => {
+      inputListener = (event): void => {
         if (event.reportId !== REPORT_ID) {
           return;
         }
@@ -404,7 +280,7 @@ export function createWebHidTransport(
       };
 
       device.addEventListener("inputreport", inputListener);
-      timeoutId = globalThis.setTimeout(() => {
+      timeoutId = globalThis.setTimeout((): void => {
         reject(
           new WebHidTransportError(
             "response-timeout",
@@ -438,30 +314,50 @@ export function createWebHidTransport(
 
   const transact = (request: HidMessage): Promise<HidMessage> => {
     const execution = transactionTail.then(
-      () => transactOnce(request),
-      () => transactOnce(request),
+      (): Promise<HidMessage> => transactOnce(request),
+      (): Promise<HidMessage> => transactOnce(request),
     );
     transactionTail = execution.then(
-      () => undefined,
-      () => undefined,
+      (): void => undefined,
+      (): void => undefined,
     );
     return execution;
   };
 
+  const subscribeDisconnect = (
+    listener: (identity: KeyboardIdentity | null) => void,
+  ): (() => void) => {
+    disconnectListeners.add(listener);
+    return (): void => {
+      disconnectListeners.delete(listener);
+    };
+  };
+
   return {
-    get identity() {
+    get identity(): KeyboardIdentity | null {
       return currentIdentity();
     },
-    support: supported,
+    support: SUPPORTED_TRANSPORT,
     requestDevice,
     open,
     close,
     transact,
-    subscribeDisconnect: (listener) => {
-      disconnectListeners.add(listener);
-      return () => {
-        disconnectListeners.delete(listener);
-      };
-    },
+    subscribeDisconnect,
   };
 }
+
+export {
+  createBrowserWebHidTransport,
+  createWebHidTransport,
+  WebHidTransportError,
+};
+export type {
+  WebHidConnectionEventPort,
+  WebHidDevicePort,
+  WebHidDisconnectListener,
+  WebHidInputReportEventPort,
+  WebHidInputReportListener,
+  WebHidPort,
+  WebHidTransportErrorCode,
+  WebHidTransportOptions,
+} from "./WebHidTypes.ts";
