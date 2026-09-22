@@ -6,12 +6,12 @@ import type {
   HalcyonDeviceController,
   HalcyonDeviceSessionSnapshot,
 } from "./device/halcyon-device-service.ts";
-afterEach(cleanup);
-
 import type {
   KeyboardIdentity,
   KeyboardTransportSupport,
 } from "./transport.ts";
+
+afterEach(cleanup);
 
 const IDENTITY: KeyboardIdentity = {
   vendorId: 0x46_53,
