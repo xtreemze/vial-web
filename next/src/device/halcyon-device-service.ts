@@ -85,6 +85,7 @@ class HalcyonDeviceService implements HalcyonDeviceController {
   readonly #unsubscribeDisconnect: () => void;
   readonly #listeners = new Set<() => void>();
   #extensions: HalcyonExtensions = EMPTY_EXTENSIONS;
+  #rgbProfileEditor: RgbProfileEditorController | null = null;
   #snapshot: HalcyonDeviceSessionSnapshot = {
     status: "disconnected",
     identity: null,
@@ -113,13 +114,8 @@ class HalcyonDeviceService implements HalcyonDeviceController {
     return this.#extensions;
   }
 
-  readonly getRgbProfileEditor = (): RgbProfileEditorController | null => {
-    const client = this.#extensions.rgbProfiles;
-    if (client === null) {
-      return null;
-    }
-    return new DeviceRgbProfileEditorController(client);
-  };
+  readonly getRgbProfileEditor = (): RgbProfileEditorController | null =>
+    this.#rgbProfileEditor;
 
   readonly getSnapshot = (): HalcyonDeviceSessionSnapshot => this.#snapshot;
 
@@ -184,11 +180,13 @@ class HalcyonDeviceService implements HalcyonDeviceController {
       decodeHalcyonDisplayCapabilities,
     );
 
+    const rgbProfiles =
+      rgbCapabilities === null
+        ? null
+        : new RgbProfileClient(this.#transport, rgbCapabilities);
+
     this.#extensions = {
-      rgbProfiles:
-        rgbCapabilities === null
-          ? null
-          : new RgbProfileClient(this.#transport, rgbCapabilities),
+      rgbProfiles,
       settings:
         settingsCapabilities === null
           ? null
@@ -198,6 +196,8 @@ class HalcyonDeviceService implements HalcyonDeviceController {
           ? null
           : new HalcyonDisplayClient(this.#transport, displayCapabilities),
     };
+    this.#rgbProfileEditor =
+      rgbProfiles === null ? null : new DeviceRgbProfileEditorController(rgbProfiles);
     this.#publishSession();
     return this.#extensions;
   }
@@ -210,6 +210,7 @@ class HalcyonDeviceService implements HalcyonDeviceController {
 
   #clearExtensions(): void {
     this.#extensions = EMPTY_EXTENSIONS;
+    this.#rgbProfileEditor = null;
   }
 
   #publishSession(): void {
