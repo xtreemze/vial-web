@@ -20,8 +20,8 @@ interface FakeDevice {
 }
 
 function createFakeDevice(
-  vendorId = 0x4653,
-  productId = 0x0001,
+  vendorId = 0x46_53,
+  productId = 0x00_01,
   productName = "Halcyon Ferris",
 ): FakeDevice {
   let opened = false;
@@ -139,11 +139,11 @@ describe("createWebHidTransport", () => {
     const identity = await transport.requestDevice();
 
     expect(identity).toEqual({
-      vendorId: 0x4653,
-      productId: 0x0001,
+      vendorId: 0x46_53,
+      productId: 0x00_01,
       productName: "Halcyon Ferris",
     });
-    expect(hid.filters()).toEqual([{ usagePage: 0xff60, usage: 0x61 }]);
+    expect(hid.filters()).toEqual([{ usagePage: 0xff_60, usage: 0x61 }]);
   });
 
   it("pads requests to the 32-byte Vial report and resolves the matching report", async () => {
@@ -237,8 +237,8 @@ describe("createWebHidTransport", () => {
 
     await expect(
       transport.open({
-        vendorId: 0x4653,
-        productId: 0x0001,
+        vendorId: 0x46_53,
+        productId: 0x00_01,
         productName: "Halcyon Ferris",
       }),
     ).rejects.toMatchObject({
