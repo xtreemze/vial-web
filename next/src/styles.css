@@ -148,3 +148,89 @@ h2 {
     grid-template-columns: 1fr auto;
   }
 }
+
+
+.editor-card {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid #303641;
+  border-radius: 1rem;
+  background: #15181d;
+}
+
+.editor-heading {
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.range-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+.range-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.range-field-heading {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+  color: #d7dce4;
+}
+
+.range-field output {
+  color: #f5f7fa;
+  font-variant-numeric: tabular-nums;
+}
+
+.range-field input[type="range"] {
+  inline-size: 100%;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.editor-actions button {
+  min-block-size: 2.5rem;
+  padding-inline: 0.9rem;
+  border: 1px solid #586579;
+  border-radius: 0.65rem;
+  background: #232933;
+  color: #f5f7fa;
+  cursor: pointer;
+}
+
+.editor-actions button:hover:not(:disabled) {
+  border-color: #7d8ca3;
+  background: #303846;
+}
+
+.editor-actions button:focus-visible,
+.range-field input:focus-visible {
+  outline: 0.15rem solid currentColor;
+  outline-offset: 0.2rem;
+}
+
+.editor-actions button:disabled,
+.range-field input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.operation-feedback {
+  min-block-size: 1.5rem;
+}
+
+.operation-feedback p {
+  margin-block-end: 0;
+}

@@ -7,6 +7,10 @@ import type {
   HalcyonDeviceSessionSnapshot,
 } from "./device/halcyon-device-service.ts";
 import type {
+  RgbProfileEditorController,
+  RgbProfileValue,
+} from "./device/rgb-profile-editor-controller.ts";
+import type {
   KeyboardIdentity,
   KeyboardTransportSupport,
 } from "./transport.ts";
@@ -29,10 +33,32 @@ const DISCONNECTED: HalcyonDeviceSessionSnapshot = {
   },
 };
 
+const FAKE_RGB_PROFILE_EDITOR: RgbProfileEditorController = {
+  capabilities: {
+    maximumMode: 40,
+    maximumBrightness: 180,
+  },
+  load: (): Promise<RgbProfileValue> =>
+    Promise.resolve({
+      mode: 4,
+      hue: 24,
+      saturation: 160,
+      brightness: 90,
+      speed: 32,
+    }),
+  preview: (_profile: RgbProfileValue): Promise<void> => Promise.resolve(),
+  cancelPreview: (): Promise<void> => Promise.resolve(),
+  apply: (_profile: RgbProfileValue): Promise<void> => Promise.resolve(),
+  save: (_profile: RgbProfileValue): Promise<void> => Promise.resolve(),
+};
+
 class FakeController implements HalcyonDeviceController {
   readonly support: KeyboardTransportSupport = { status: "supported" };
   readonly #listeners = new Set<() => void>();
   #snapshot: HalcyonDeviceSessionSnapshot = DISCONNECTED;
+
+  readonly getRgbProfileEditor = (): RgbProfileEditorController | null =>
+    this.#snapshot.status === "connected" ? FAKE_RGB_PROFILE_EDITOR : null;
 
   readonly getSnapshot = (): HalcyonDeviceSessionSnapshot => this.#snapshot;
 
@@ -97,6 +123,9 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: "Disconnect keyboard" }),
     ).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { level: 2, name: "Lighting profile" }),
+    ).toBeTruthy();
   });
 
   it("returns to disconnected UI when the service reports physical disconnect", async () => {
@@ -119,5 +148,8 @@ describe("App", () => {
       }),
     ).toBeTruthy();
     expect(screen.getAllByText("Not probed")).toHaveLength(3);
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "Lighting profile" }),
+    ).toBeNull();
   });
 });

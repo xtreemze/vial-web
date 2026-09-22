@@ -26,6 +26,10 @@ import { probeNamespace } from "./device-service-transport.ts";
 import { HalcyonDisplayClient } from "./halcyon-display-client.ts";
 import { HalcyonSettingsClient } from "./halcyon-settings-client.ts";
 import { RgbProfileClient } from "./rgb-profile-client.ts";
+import {
+  DeviceRgbProfileEditorController,
+  type RgbProfileEditorController,
+} from "./rgb-profile-editor-controller.ts";
 
 interface HalcyonExtensions {
   readonly rgbProfiles: RgbProfileClient | null;
@@ -49,6 +53,7 @@ interface HalcyonDeviceController {
   readonly support: KeyboardTransportSupport;
   readonly connect: () => Promise<KeyboardIdentity>;
   readonly disconnect: () => Promise<void>;
+  readonly getRgbProfileEditor: () => RgbProfileEditorController | null;
   readonly getSnapshot: () => HalcyonDeviceSessionSnapshot;
   readonly subscribe: (listener: () => void) => () => void;
 }
@@ -80,6 +85,7 @@ class HalcyonDeviceService implements HalcyonDeviceController {
   readonly #unsubscribeDisconnect: () => void;
   readonly #listeners = new Set<() => void>();
   #extensions: HalcyonExtensions = EMPTY_EXTENSIONS;
+  #rgbProfileEditor: RgbProfileEditorController | null = null;
   #snapshot: HalcyonDeviceSessionSnapshot = {
     status: "disconnected",
     identity: null,
@@ -107,6 +113,9 @@ class HalcyonDeviceService implements HalcyonDeviceController {
   get extensions(): HalcyonExtensions {
     return this.#extensions;
   }
+
+  readonly getRgbProfileEditor = (): RgbProfileEditorController | null =>
+    this.#rgbProfileEditor;
 
   readonly getSnapshot = (): HalcyonDeviceSessionSnapshot => this.#snapshot;
 
@@ -171,11 +180,13 @@ class HalcyonDeviceService implements HalcyonDeviceController {
       decodeHalcyonDisplayCapabilities,
     );
 
+    const rgbProfiles =
+      rgbCapabilities === null
+        ? null
+        : new RgbProfileClient(this.#transport, rgbCapabilities);
+
     this.#extensions = {
-      rgbProfiles:
-        rgbCapabilities === null
-          ? null
-          : new RgbProfileClient(this.#transport, rgbCapabilities),
+      rgbProfiles,
       settings:
         settingsCapabilities === null
           ? null
@@ -185,6 +196,8 @@ class HalcyonDeviceService implements HalcyonDeviceController {
           ? null
           : new HalcyonDisplayClient(this.#transport, displayCapabilities),
     };
+    this.#rgbProfileEditor =
+      rgbProfiles === null ? null : new DeviceRgbProfileEditorController(rgbProfiles);
     this.#publishSession();
     return this.#extensions;
   }
@@ -197,6 +210,7 @@ class HalcyonDeviceService implements HalcyonDeviceController {
 
   #clearExtensions(): void {
     this.#extensions = EMPTY_EXTENSIONS;
+    this.#rgbProfileEditor = null;
   }
 
   #publishSession(): void {
