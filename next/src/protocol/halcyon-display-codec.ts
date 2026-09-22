@@ -1,6 +1,7 @@
 import {
   assertAcknowledged,
   assertByte,
+  assertProtocolVersion,
   frame,
   ProtocolCodecError,
   readByte,
@@ -97,8 +98,10 @@ function getCapabilitiesRequest(): Uint8Array {
 
 function decodeCapabilities(response: Uint8Array): HalcyonDisplayCapabilities {
   assertAcknowledged(response, COMMAND, OP.getCapabilities, 14);
+  const protocolVersion = readByte(response, 2, "protocol version");
+  assertProtocolVersion("Halcyon display", protocolVersion, VERSION);
   return {
-    protocolVersion: readByte(response, 2, "protocol version"),
+    protocolVersion,
     flags: readByte(response, 3, "capability flags"),
     layerCount: readByte(response, 4, "layer count"),
     modifierCount: readByte(response, 5, "modifier count"),
