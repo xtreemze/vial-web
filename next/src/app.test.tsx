@@ -1,11 +1,13 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { App } from "./app.tsx";
 import type {
   HalcyonDeviceController,
   HalcyonDeviceSessionSnapshot,
 } from "./device/halcyon-device-service.ts";
+afterEach(cleanup);
+
 import type {
   KeyboardIdentity,
   KeyboardTransportSupport,
