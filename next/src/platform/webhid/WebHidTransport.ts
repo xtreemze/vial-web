@@ -19,6 +19,7 @@ import type {
   WebHidDisconnectListener,
   WebHidInputReportListener,
   WebHidPort,
+  WebHidInputReportEventPort,
   WebHidTransportOptions,
 } from "./WebHidTypes.ts";
 
@@ -93,7 +94,9 @@ function createWebHidTransport(
     return identityFromDevice(selectedDevice);
   };
 
-  const disconnectListener: WebHidDisconnectListener = (event): void => {
+  const disconnectListener: WebHidDisconnectListener = (
+    event: import("./WebHidTypes.ts").WebHidConnectionEventPort,
+  ): void => {
     if (event.device !== selectedDevice) {
       return;
     }
@@ -186,11 +189,11 @@ function createWebHidTransport(
     return device;
   };
 
-  const open = async (identity?: KeyboardIdentity): Promise<void> => {
+  const open = async (targetIdentity?: KeyboardIdentity): Promise<void> => {
     let device = selectedDevice;
 
-    if (identity !== undefined) {
-      device = await resolveGrantedDevice(identity);
+    if (targetIdentity !== undefined) {
+      device = await resolveGrantedDevice(targetIdentity);
     }
 
     if (device === null) {
@@ -207,6 +210,7 @@ function createWebHidTransport(
         throw new WebHidTransportError(
           "open-failed",
           `Opening the selected WebHID device failed: ${describeFailure(error)}`,
+          { cause: error },
         );
       }
     }
@@ -228,6 +232,7 @@ function createWebHidTransport(
       throw new WebHidTransportError(
         "io-failed",
         `Closing the selected WebHID device failed: ${describeFailure(error)}`,
+        { cause: error },
       );
     }
   };
@@ -260,7 +265,7 @@ function createWebHidTransport(
       };
       activeTransactionAbort = abort;
 
-      inputListener = (event): void => {
+      inputListener = (event: WebHidInputReportEventPort): void => {
         if (event.reportId !== REPORT_ID) {
           return;
         }
@@ -300,6 +305,7 @@ function createWebHidTransport(
       throw new WebHidTransportError(
         "io-failed",
         `WebHID transaction failed: ${describeFailure(error)}`,
+        { cause: error },
       );
     } finally {
       if (timeoutId !== null) {
@@ -349,7 +355,6 @@ function createWebHidTransport(
 export {
   createBrowserWebHidTransport,
   createWebHidTransport,
-  WebHidTransportError,
 };
 export type {
   WebHidConnectionEventPort,
