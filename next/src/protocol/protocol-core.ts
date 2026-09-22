@@ -7,6 +7,22 @@ class ProtocolCodecError extends Error {
   }
 }
 
+class UnsupportedProtocolVersionError extends ProtocolCodecError {
+  readonly actual: number;
+  readonly expected: number;
+  readonly protocol: string;
+
+  constructor(protocol: string, actual: number, expected: number) {
+    super(
+      `${protocol} protocol version ${actual} is unsupported; expected version ${expected}`,
+    );
+    this.name = "UnsupportedProtocolVersionError";
+    this.actual = actual;
+    this.expected = expected;
+    this.protocol = protocol;
+  }
+}
+
 function assertByte(label: string, value: number): number {
   if (!Number.isInteger(value) || value < 0 || value > 0xff) {
     throw new RangeError(`${label} must be an unsigned byte`);
@@ -66,6 +82,22 @@ function assertAcknowledged(
   }
 }
 
+function assertProtocolVersion(
+  protocol: string,
+  actual: number,
+  expected: number,
+): void {
+  if (actual !== expected) {
+    throw new UnsupportedProtocolVersionError(protocol, actual, expected);
+  }
+}
+
+function supportsCapability(flags: number, flag: number): boolean {
+  const checkedFlags = assertByte("capability flags", flags);
+  const checkedFlag = assertByte("capability flag", flag);
+  return (checkedFlags & checkedFlag) !== 0;
+}
+
 function readByte(data: Uint8Array, offset: number, label: string): number {
   requireLength(data, offset + 1, label);
   const value = data[offset];
@@ -78,6 +110,7 @@ function readByte(data: Uint8Array, offset: number, label: string): number {
 export {
   assertAcknowledged,
   assertByte,
+  assertProtocolVersion,
   assertUint16,
   decodeUint16,
   encodeUint16,
@@ -85,5 +118,7 @@ export {
   ProtocolCodecError,
   readByte,
   requireLength,
+  supportsCapability,
+  UnsupportedProtocolVersionError,
 };
 export type { ByteArray };
