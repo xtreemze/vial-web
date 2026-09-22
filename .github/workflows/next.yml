@@ -3,7 +3,7 @@ name: Web-native client
 on:
   push:
     branches:
-      - feat/web-native-react-scaffold
+      - main
   pull_request:
     branches:
       - main
@@ -30,8 +30,8 @@ jobs:
           corepack prepare pnpm@12.5.1 --activate
           pnpm --version
 
-      - name: Resolve workspace lockfile
-        run: pnpm install --no-frozen-lockfile
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
         run: pnpm --dir next typecheck
@@ -41,9 +41,3 @@ jobs:
 
       - name: Production build
         run: pnpm --dir next build
-
-      - name: Emit generated lockfile for bootstrap
-        run: |
-          echo '---PNPM_LOCKFILE_BEGIN---'
-          cat pnpm-lock.yaml
-          echo '---PNPM_LOCKFILE_END---'
