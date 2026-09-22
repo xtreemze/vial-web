@@ -140,6 +140,44 @@ describe("HalcyonDeviceService", () => {
     });
   });
 
+  it("publishes connected and disconnected session snapshots to subscribers", async () => {
+    const harness = createFakeTransport(capabilityResponder);
+    const service = new HalcyonDeviceService(harness.transport);
+    const statuses: string[] = [];
+    const unsubscribe = service.subscribe((): void => {
+      statuses.push(service.getSnapshot().status);
+    });
+
+    expect(service.getSnapshot().status).toBe("disconnected");
+
+    await service.connect();
+
+    expect(service.getSnapshot()).toMatchObject({
+      status: "connected",
+      identity: IDENTITY,
+      extensionAvailability: {
+        rgbProfiles: true,
+        settings: true,
+        display: true,
+      },
+    });
+
+    harness.disconnect();
+
+    expect(service.getSnapshot()).toMatchObject({
+      status: "disconnected",
+      identity: null,
+      extensionAvailability: {
+        rgbProfiles: false,
+        settings: false,
+        display: false,
+      },
+    });
+    expect(statuses).toEqual(["connected", "disconnected"]);
+
+    unsubscribe();
+  });
+
   it("delegates RGB writes to codecs and keeps save explicit", async () => {
     const harness = createFakeTransport(capabilityResponder);
     const service = new HalcyonDeviceService(harness.transport);

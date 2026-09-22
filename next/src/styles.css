@@ -90,17 +90,34 @@ h2 {
   color: #9aa4b2;
 }
 
+.error-message {
+  margin-block-end: 0;
+  color: #ffb4ab;
+}
+
 .connect-button {
   min-block-size: 2.75rem;
   padding-inline: 1rem;
-  border: 1px solid #3c4452;
+  border: 1px solid #586579;
   border-radius: 0.65rem;
-  background: #242932;
-  color: #8d96a4;
+  background: #2d3541;
+  color: #f5f7fa;
+  cursor: pointer;
 }
 
-.connect-button[data-disabled] {
+.connect-button:hover:not(:disabled) {
+  border-color: #7d8ca3;
+  background: #374151;
+}
+
+.connect-button:focus-visible {
+  outline: 0.15rem solid currentColor;
+  outline-offset: 0.2rem;
+}
+
+.connect-button:disabled {
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .capability-list {
@@ -112,11 +129,18 @@ h2 {
 }
 
 .capability-list li {
+  display: grid;
+  gap: 0.5rem;
   padding: 0.9rem 1rem;
   border: 1px solid #282e38;
   border-radius: 0.75rem;
   background: #111318;
   color: #d7dce4;
+}
+
+.capability-list strong {
+  color: #f5f7fa;
+  font-size: 0.875rem;
 }
 
 @media (min-width: 44rem) {
