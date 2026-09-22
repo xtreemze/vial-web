@@ -1,6 +1,7 @@
 import type {
   KeyboardIdentity,
   KeyboardTransport,
+  KeyboardTransportSupport,
 } from "../transport.ts";
 import {
   decodeRgbProfileCapabilities,
@@ -32,13 +33,57 @@ interface HalcyonExtensions {
   readonly display: HalcyonDisplayClient | null;
 }
 
-class HalcyonDeviceService {
+interface HalcyonExtensionAvailability {
+  readonly rgbProfiles: boolean;
+  readonly settings: boolean;
+  readonly display: boolean;
+}
+
+interface HalcyonDeviceSessionSnapshot {
+  readonly status: "disconnected" | "connected";
+  readonly identity: KeyboardIdentity | null;
+  readonly extensionAvailability: HalcyonExtensionAvailability;
+}
+
+interface HalcyonDeviceController {
+  readonly support: KeyboardTransportSupport;
+  readonly connect: () => Promise<KeyboardIdentity>;
+  readonly disconnect: () => Promise<void>;
+  readonly getSnapshot: () => HalcyonDeviceSessionSnapshot;
+  readonly subscribe: (listener: () => void) => () => void;
+}
+
+const EMPTY_EXTENSIONS: HalcyonExtensions = {
+  rgbProfiles: null,
+  settings: null,
+  display: null,
+};
+
+const EMPTY_AVAILABILITY: HalcyonExtensionAvailability = {
+  rgbProfiles: false,
+  settings: false,
+  display: false,
+};
+
+function availabilityFromExtensions(
+  extensions: HalcyonExtensions,
+): HalcyonExtensionAvailability {
+  return {
+    rgbProfiles: extensions.rgbProfiles !== null,
+    settings: extensions.settings !== null,
+    display: extensions.display !== null,
+  };
+}
+
+class HalcyonDeviceService implements HalcyonDeviceController {
   readonly #transport: KeyboardTransport;
   readonly #unsubscribeDisconnect: () => void;
-  #extensions: HalcyonExtensions = {
-    rgbProfiles: null,
-    settings: null,
-    display: null,
+  readonly #listeners = new Set<() => void>();
+  #extensions: HalcyonExtensions = EMPTY_EXTENSIONS;
+  #snapshot: HalcyonDeviceSessionSnapshot = {
+    status: "disconnected",
+    identity: null,
+    extensionAvailability: EMPTY_AVAILABILITY,
   };
 
   constructor(transport: KeyboardTransport) {
@@ -46,6 +91,7 @@ class HalcyonDeviceService {
     this.#unsubscribeDisconnect = transport.subscribeDisconnect(
       (_identity: KeyboardIdentity | null): void => {
         this.#clearExtensions();
+        this.#publishSession();
       },
     );
   }
@@ -54,11 +100,24 @@ class HalcyonDeviceService {
     return this.#transport.identity;
   }
 
+  get support(): KeyboardTransportSupport {
+    return this.#transport.support;
+  }
+
   get extensions(): HalcyonExtensions {
     return this.#extensions;
   }
 
-  async connect(): Promise<KeyboardIdentity> {
+  readonly getSnapshot = (): HalcyonDeviceSessionSnapshot => this.#snapshot;
+
+  readonly subscribe = (listener: () => void): (() => void) => {
+    this.#listeners.add(listener);
+    return (): void => {
+      this.#listeners.delete(listener);
+    };
+  };
+
+  readonly connect = async (): Promise<KeyboardIdentity> => {
     if (this.#transport.support.status !== "supported") {
       throw new DeviceSelectionError(
         `Keyboard transport is unavailable: ${this.#transport.support.reason}`,
@@ -73,17 +132,21 @@ class HalcyonDeviceService {
     await this.#transport.open(identity);
     await this.probeExtensions();
     return identity;
-  }
+  };
 
   async reconnect(identity: KeyboardIdentity): Promise<void> {
     await this.#transport.open(identity);
     await this.probeExtensions();
   }
 
-  async disconnect(): Promise<void> {
+  readonly disconnect = async (): Promise<void> => {
     this.#clearExtensions();
-    await this.#transport.close();
-  }
+    try {
+      await this.#transport.close();
+    } finally {
+      this.#publishSession();
+    }
+  };
 
   async probeExtensions(): Promise<HalcyonExtensions> {
     const rgbCapabilities = await probeNamespace(
@@ -122,22 +185,43 @@ class HalcyonDeviceService {
           ? null
           : new HalcyonDisplayClient(this.#transport, displayCapabilities),
     };
+    this.#publishSession();
     return this.#extensions;
   }
 
   dispose(): void {
     this.#unsubscribeDisconnect();
     this.#clearExtensions();
+    this.#listeners.clear();
   }
 
   #clearExtensions(): void {
-    this.#extensions = {
-      rgbProfiles: null,
-      settings: null,
-      display: null,
+    this.#extensions = EMPTY_EXTENSIONS;
+  }
+
+  #publishSession(): void {
+    const identity = this.#transport.identity;
+    let status: HalcyonDeviceSessionSnapshot["status"] = "disconnected";
+    if (identity !== null) {
+      status = "connected";
+    }
+
+    this.#snapshot = {
+      status,
+      identity,
+      extensionAvailability: availabilityFromExtensions(this.#extensions),
     };
+
+    for (const listener of this.#listeners) {
+      listener();
+    }
   }
 }
 
 export { HalcyonDeviceService };
-export type { HalcyonExtensions };
+export type {
+  HalcyonDeviceController,
+  HalcyonDeviceSessionSnapshot,
+  HalcyonExtensionAvailability,
+  HalcyonExtensions,
+};
