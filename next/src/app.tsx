@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import type { HalcyonDeviceController } from "./device/halcyon-device-service.ts";
+import { RgbProfileEditor } from "./rgb-profile-editor.tsx";
 
 interface AppProps {
   readonly controller: HalcyonDeviceController;
@@ -52,6 +53,7 @@ export function App({ controller }: AppProps): ReactNode {
 
   const connected = snapshot.status === "connected";
   const unsupportedMessage = supportMessage(controller);
+  const rgbProfileEditor = connected ? controller.getRgbProfileEditor() : null;
 
   let heading = "No keyboard connected";
   if (snapshot.identity?.productName !== undefined) {
@@ -163,6 +165,10 @@ export function App({ controller }: AppProps): ReactNode {
             </li>
           </ul>
         </section>
+
+        {rgbProfileEditor === null ? null : (
+          <RgbProfileEditor controller={rgbProfileEditor} />
+        )}
       </section>
     </main>
   );
