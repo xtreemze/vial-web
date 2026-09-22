@@ -1,6 +1,7 @@
 import {
   type ChangeEvent,
   type ReactNode,
+  useCallback,
   useEffect,
   useId,
   useState,
@@ -69,9 +70,13 @@ function describeError(error: unknown): string {
 }
 
 function ProfileRangeField(props: ProfileRangeFieldProps): ReactNode {
-  function handleChange(event: ChangeEvent<HTMLInputElement>): void {
-    props.onChange(props.field, Number(event.currentTarget.value));
-  }
+  const handleChange: (event: ChangeEvent<HTMLInputElement>) => void =
+    useCallback(
+      function handleChange(event: ChangeEvent<HTMLInputElement>): void {
+        props.onChange(props.field, Number(event.currentTarget.value));
+      },
+      [props.field, props.onChange],
+    );
 
   return (
     <label className="range-field">
@@ -234,45 +239,73 @@ function LoadedRgbProfileEditor(props: LoadedEditorProps): ReactNode {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function execute(operation: Promise<void>, success: string): Promise<void> {
-    setBusy(true);
-    setStatusMessage(null);
-    setErrorMessage(null);
-    try {
-      await operation;
-      setStatusMessage(success);
-    } catch (error: unknown) {
-      setErrorMessage(describeError(error));
-    } finally {
-      setBusy(false);
-    }
-  }
+  const execute: (
+    operation: Promise<void>,
+    success: string,
+  ) => Promise<void> = useCallback(
+    async function execute(
+      operation: Promise<void>,
+      success: string,
+    ): Promise<void> {
+      setBusy(true);
+      setStatusMessage(null);
+      setErrorMessage(null);
+      try {
+        await operation;
+        setStatusMessage(success);
+      } catch (error: unknown) {
+        setErrorMessage(describeError(error));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [],
+  );
 
-  function handleChange(field: ProfileField, value: number): void {
-    setProfile({ ...profile, [field]: value });
-  }
-
-  async function handlePreview(): Promise<void> {
-    await execute(
-      props.controller.preview(profile),
-      "Preview active temporarily.",
+  const handleChange: (field: ProfileField, value: number) => void =
+    useCallback(
+      function handleChange(field: ProfileField, value: number): void {
+        setProfile({ ...profile, [field]: value });
+      },
+      [profile],
     );
-  }
 
-  async function handleCancelPreview(): Promise<void> {
-    await execute(props.controller.cancelPreview(), "Preview cancelled.");
-  }
+  const handlePreview: () => Promise<void> = useCallback(
+    async function handlePreview(): Promise<void> {
+      await execute(
+        props.controller.preview(profile),
+        "Preview active temporarily.",
+      );
+    },
+    [execute, profile, props.controller],
+  );
 
-  async function handleApply(): Promise<void> {
-    await execute(
-      props.controller.apply(profile),
-      "Profile applied to live keyboard state.",
-    );
-  }
+  const handleCancelPreview: () => Promise<void> = useCallback(
+    async function handleCancelPreview(): Promise<void> {
+      await execute(props.controller.cancelPreview(), "Preview cancelled.");
+    },
+    [execute, props.controller],
+  );
 
-  async function handleSave(): Promise<void> {
-    await execute(props.controller.save(profile), "Profile saved to keyboard.");
-  }
+  const handleApply: () => Promise<void> = useCallback(
+    async function handleApply(): Promise<void> {
+      await execute(
+        props.controller.apply(profile),
+        "Profile applied to live keyboard state.",
+      );
+    },
+    [execute, profile, props.controller],
+  );
+
+  const handleSave: () => Promise<void> = useCallback(
+    async function handleSave(): Promise<void> {
+      await execute(
+        props.controller.save(profile),
+        "Profile saved to keyboard.",
+      );
+    },
+    [execute, profile, props.controller],
+  );
 
   return (
     <EditorView
