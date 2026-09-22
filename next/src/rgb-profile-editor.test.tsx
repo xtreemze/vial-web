@@ -52,14 +52,16 @@ describe("RgbProfileEditor", () => {
     render(<RgbProfileEditor controller={controller} />);
 
     const brightness = await screen.findByRole("slider", {
-      name: "Brightness 90",
+      name: "Brightness",
     });
     const mode = screen.getByRole("slider", {
-      name: "Effect mode 7",
+      name: "Effect mode",
     });
 
     expect(brightness).toHaveProperty("max", "160");
+    expect(brightness).toHaveProperty("value", "90");
     expect(mode).toHaveProperty("max", "42");
+    expect(mode).toHaveProperty("value", "7");
     expect(controller.calls).toEqual(["load"]);
   });
 
@@ -67,7 +69,7 @@ describe("RgbProfileEditor", () => {
     const controller = new FakeRgbEditorController();
     render(<RgbProfileEditor controller={controller} />);
 
-    await screen.findByRole("slider", { name: "Brightness 90" });
+    await screen.findByRole("slider", { name: "Brightness" });
 
     fireEvent.click(screen.getByRole("button", { name: "Preview" }));
     expect(
@@ -84,10 +86,13 @@ describe("RgbProfileEditor", () => {
     const controller = new FakeRgbEditorController();
     render(<RgbProfileEditor controller={controller} />);
 
-    const hue = await screen.findByRole("slider", { name: "Hue 24" });
+    const hue = await screen.findByRole("slider", { name: "Hue" });
     fireEvent.change(hue, { target: { value: "96" } });
 
-    expect(screen.getByRole("slider", { name: "Hue 96" })).toBeTruthy();
+    expect(screen.getByRole("slider", { name: "Hue" })).toHaveProperty(
+      "value",
+      "96",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     expect(
