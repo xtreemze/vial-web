@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ProtocolCodecError } from "./protocol-core.ts";
+import {
+  ProtocolCodecError,
+  UnsupportedProtocolVersionError,
+} from "./protocol-core.ts";
 import {
   decodeRgbComboDuration,
   decodeRgbProfile,
@@ -282,6 +285,24 @@ describe("protocol validation", () => {
     expect(() =>
       decodeRgbProfile(Uint8Array.of(0xf1, 0x02, 1, 2, 3, 4, 5, 6, 7)),
     ).toThrow(ProtocolCodecError);
+  });
+
+  it("rejects unsupported protocol versions explicitly", () => {
+    expect(() =>
+      decodeRgbProfileCapabilities(
+        Uint8Array.of(0xf0, 0x01, 2, 0x0f, 13, 4, 32, 180, 63, 0x1f, 1),
+      ),
+    ).toThrow(UnsupportedProtocolVersionError);
+    expect(() =>
+      decodeHalcyonSettingsCapabilities(
+        Uint8Array.of(0xf1, 0x01, 2, 0x1f, 13, 10, 1, 5, 100, 100, 1, 1),
+      ),
+    ).toThrow(UnsupportedProtocolVersionError);
+    expect(() =>
+      decodeHalcyonDisplayCapabilities(
+        Uint8Array.of(0xf2, 0x01, 2, 0x0f, 13, 10, 4, 8, 4, 2, 16, 8, 8, 1),
+      ),
+    ).toThrow(UnsupportedProtocolVersionError);
   });
 
   it("rejects out-of-range integers and non-printable labels", () => {
