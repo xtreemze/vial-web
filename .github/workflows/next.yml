@@ -1,17 +1,19 @@
-name: Strict lint policy
+name: Web-native client
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  lint:
+  next:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -31,5 +33,11 @@ jobs:
       - name: Install workspace
         run: pnpm install --frozen-lockfile
 
-      - name: Run strict lint policy
-        run: pnpm lint
+      - name: Typecheck
+        run: pnpm --dir next typecheck
+
+      - name: Unit tests
+        run: pnpm --dir next test
+
+      - name: Production build
+        run: pnpm --dir next build
