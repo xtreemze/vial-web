@@ -75,7 +75,7 @@ export function App({ controller }: AppProps): ReactNode {
     actionLabel = connected ? "Disconnecting…" : "Connecting…";
   }
 
-  async function handleConnectionAction(): Promise<void> {
+  async function handleConnectionAction(_formData: FormData): Promise<void> {
     setBusy(true);
     setErrorMessage(null);
     try {
@@ -103,9 +103,10 @@ export function App({ controller }: AppProps): ReactNode {
           separate so web and desktop can share one typed domain model.
         </p>
 
-        <section
+        <form
           className="connection-card"
           aria-labelledby={connectionTitleId}
+          action={handleConnectionAction}
         >
           <div>
             <p className="label">Device</p>
@@ -121,13 +122,12 @@ export function App({ controller }: AppProps): ReactNode {
           </div>
           <button
             className="connect-button"
-            type="button"
+            type="submit"
             disabled={actionDisabled}
-            onClick={handleConnectionAction}
           >
             {actionLabel}
           </button>
-        </section>
+        </form>
 
         <section aria-labelledby={capabilityTitleId}>
           <p className="label" id={capabilityTitleId}>
