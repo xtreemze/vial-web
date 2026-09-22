@@ -22,8 +22,14 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install lint toolchain
-        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@12.5.1 --activate
+          pnpm --version
+
+      - name: Install workspace
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run strict lint policy
-        run: npm run lint
+        run: pnpm lint
