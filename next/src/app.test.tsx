@@ -39,20 +39,18 @@ class FakeRgbProfileEditor implements RgbProfileEditorController {
     maximumBrightness: 180,
   };
 
-  async load(): Promise<RgbProfileValue> {
-    return {
-      mode: 4,
-      hue: 24,
-      saturation: 160,
-      brightness: 90,
-      speed: 32,
-    };
-  }
+  readonly load = async (): Promise<RgbProfileValue> => ({
+    mode: 4,
+    hue: 24,
+    saturation: 160,
+    brightness: 90,
+    speed: 32,
+  });
 
-  async preview(_profile: RgbProfileValue): Promise<void> {}
-  async cancelPreview(): Promise<void> {}
-  async apply(_profile: RgbProfileValue): Promise<void> {}
-  async save(_profile: RgbProfileValue): Promise<void> {}
+  readonly preview = async (_profile: RgbProfileValue): Promise<void> => {};
+  readonly cancelPreview = async (): Promise<void> => {};
+  readonly apply = async (_profile: RgbProfileValue): Promise<void> => {};
+  readonly save = async (_profile: RgbProfileValue): Promise<void> => {};
 }
 
 class FakeController implements HalcyonDeviceController {
