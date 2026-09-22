@@ -7,6 +7,10 @@ import type {
   HalcyonDeviceSessionSnapshot,
 } from "./device/halcyon-device-service.ts";
 import type {
+  RgbProfileEditorController,
+  RgbProfileValue,
+} from "./device/rgb-profile-editor-controller.ts";
+import type {
   KeyboardIdentity,
   KeyboardTransportSupport,
 } from "./transport.ts";
@@ -29,10 +33,35 @@ const DISCONNECTED: HalcyonDeviceSessionSnapshot = {
   },
 };
 
+class FakeRgbProfileEditor implements RgbProfileEditorController {
+  readonly capabilities = {
+    maximumMode: 40,
+    maximumBrightness: 180,
+  };
+
+  async load(): Promise<RgbProfileValue> {
+    return {
+      mode: 4,
+      hue: 24,
+      saturation: 160,
+      brightness: 90,
+      speed: 32,
+    };
+  }
+
+  async preview(_profile: RgbProfileValue): Promise<void> {}
+  async cancelPreview(): Promise<void> {}
+  async apply(_profile: RgbProfileValue): Promise<void> {}
+  async save(_profile: RgbProfileValue): Promise<void> {}
+}
+
 class FakeController implements HalcyonDeviceController {
   readonly support: KeyboardTransportSupport = { status: "supported" };
   readonly #listeners = new Set<() => void>();
   #snapshot: HalcyonDeviceSessionSnapshot = DISCONNECTED;
+
+  readonly getRgbProfileEditor = (): RgbProfileEditorController | null =>
+    this.#snapshot.status === "connected" ? new FakeRgbProfileEditor() : null;
 
   readonly getSnapshot = (): HalcyonDeviceSessionSnapshot => this.#snapshot;
 
@@ -97,6 +126,9 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: "Disconnect keyboard" }),
     ).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { level: 2, name: "Lighting profile" }),
+    ).toBeTruthy();
   });
 
   it("returns to disconnected UI when the service reports physical disconnect", async () => {
@@ -119,5 +151,8 @@ describe("App", () => {
       }),
     ).toBeTruthy();
     expect(screen.getAllByText("Not probed")).toHaveLength(3);
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "Lighting profile" }),
+    ).toBeNull();
   });
 });
