@@ -1,5 +1,3 @@
-import { Button } from "react-aria-components";
-
 const capabilities = [
   "Standard Vial protocol",
   "xtreemze RGB profiles · 0xF0",
@@ -27,9 +25,9 @@ export function App() {
               WebHID permission and transport wiring land in the next slice.
             </p>
           </div>
-          <Button className="connect-button" isDisabled>
+          <button className="connect-button" type="button" disabled>
             Connect keyboard
-          </Button>
+          </button>
         </div>
 
         <section aria-labelledby="capability-title">
