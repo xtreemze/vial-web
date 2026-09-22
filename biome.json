@@ -40,6 +40,39 @@
           }
         }
       }
+    },
+    {
+      "includes": [
+        "next/src/platform/webhid/*.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off",
+            "noExcessiveLinesPerFile": "off"
+          },
+          "complexity": {
+            "noExcessiveLinesPerFunction": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "next/src/**/*.test.ts",
+        "next/src/**/*.test.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": "off"
+          },
+          "nursery": {
+            "useExplicitType": "off",
+            "useExplicitReturnType": "off"
+          }
+        }
+      }
     }
   ]
 }
