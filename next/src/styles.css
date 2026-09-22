@@ -16,7 +16,7 @@
 body {
   margin: 0;
   min-width: 20rem;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 button,
@@ -27,7 +27,7 @@ textarea {
 }
 
 .app-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: clamp(1rem, 4vw, 3rem);
@@ -122,16 +122,5 @@ h2 {
 @media (min-width: 44rem) {
   .connection-card {
     grid-template-columns: 1fr auto;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
   }
 }
