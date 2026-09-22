@@ -33,25 +33,24 @@ const DISCONNECTED: HalcyonDeviceSessionSnapshot = {
   },
 };
 
-class FakeRgbProfileEditor implements RgbProfileEditorController {
-  readonly capabilities = {
+const FAKE_RGB_PROFILE_EDITOR: RgbProfileEditorController = {
+  capabilities: {
     maximumMode: 40,
     maximumBrightness: 180,
-  };
-
-  readonly load = async (): Promise<RgbProfileValue> => ({
-    mode: 4,
-    hue: 24,
-    saturation: 160,
-    brightness: 90,
-    speed: 32,
-  });
-
-  readonly preview = async (_profile: RgbProfileValue): Promise<void> => {};
-  readonly cancelPreview = async (): Promise<void> => {};
-  readonly apply = async (_profile: RgbProfileValue): Promise<void> => {};
-  readonly save = async (_profile: RgbProfileValue): Promise<void> => {};
-}
+  },
+  load: (): Promise<RgbProfileValue> =>
+    Promise.resolve({
+      mode: 4,
+      hue: 24,
+      saturation: 160,
+      brightness: 90,
+      speed: 32,
+    }),
+  preview: (_profile: RgbProfileValue): Promise<void> => Promise.resolve(),
+  cancelPreview: (): Promise<void> => Promise.resolve(),
+  apply: (_profile: RgbProfileValue): Promise<void> => Promise.resolve(),
+  save: (_profile: RgbProfileValue): Promise<void> => Promise.resolve(),
+};
 
 class FakeController implements HalcyonDeviceController {
   readonly support: KeyboardTransportSupport = { status: "supported" };
@@ -59,7 +58,7 @@ class FakeController implements HalcyonDeviceController {
   #snapshot: HalcyonDeviceSessionSnapshot = DISCONNECTED;
 
   readonly getRgbProfileEditor = (): RgbProfileEditorController | null =>
-    this.#snapshot.status === "connected" ? new FakeRgbProfileEditor() : null;
+    this.#snapshot.status === "connected" ? FAKE_RGB_PROFILE_EDITOR : null;
 
   readonly getSnapshot = (): HalcyonDeviceSessionSnapshot => this.#snapshot;
 
