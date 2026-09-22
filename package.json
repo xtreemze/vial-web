@@ -4,7 +4,7 @@
   "scripts": {
     "lint": "pnpm lint:policy && pnpm lint:native",
     "lint:policy": "python3 scripts/check-antipatterns.py",
-    "lint:native": "biome lint next/src && tsc -p next/tsconfig.json"
+    "lint:native": "biome lint --max-diagnostics=1000 next/src && tsc -p next/tsconfig.json"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
