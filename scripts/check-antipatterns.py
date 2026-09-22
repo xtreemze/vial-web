@@ -113,6 +113,12 @@ def main() -> int:
         relative = path.relative_to(ROOT)
         for line_number, line in enumerate(text.splitlines(), start=1):
             for rule, pattern, message in RULES:
+                # React JSX event props are typed component/event bindings, not
+                # string-valued HTML inline event attributes. Keep the rule
+                # strict for HTML and script-generated markup without forcing
+                # React code away from its declarative event model.
+                if rule == "inline-event-handler" and path.suffix in {".jsx", ".tsx"}:
+                    continue
                 if pattern.search(line):
                     violations.append(f"{relative}:{line_number}: {rule}: {message}")
 
