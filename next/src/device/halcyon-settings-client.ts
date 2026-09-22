@@ -34,6 +34,12 @@ const CAP_MOD_COLORS = 1 << 1;
 const CAP_TIMINGS = 1 << 2;
 const CAP_TELEMETRY = 1 << 3;
 
+function requireIndex(index: number, count: number, label: string): void {
+  if (!Number.isInteger(index) || index < 0 || index >= count) {
+    throw new RangeError(`${label} index ${index} is out of range`);
+  }
+}
+
 class HalcyonSettingsClient {
   readonly capabilities: HalcyonSettingsCapabilities;
   readonly #transport: KeyboardTransport;
@@ -52,15 +58,9 @@ class HalcyonSettingsClient {
     }
   }
 
-  #requireIndex(index: number, count: number, label: string): void {
-    if (!Number.isInteger(index) || index < 0 || index >= count) {
-      throw new RangeError(`${label} index ${index} is out of range`);
-    }
-  }
-
   async getLayerStyle(index: number): Promise<LayerStyle> {
     this.#requireFlag(CAP_LAYER_COLORS, "Halcyon layer colors");
-    this.#requireIndex(index, this.capabilities.layerCount, "layer");
+    requireIndex(index, this.capabilities.layerCount, "layer");
     return transactDecoded(
       this.#transport,
       getHalcyonLayerStyleRequest(index),
@@ -70,7 +70,7 @@ class HalcyonSettingsClient {
 
   async setLayerStyle(index: number, style: LayerStyle): Promise<void> {
     this.#requireFlag(CAP_LAYER_COLORS, "Halcyon layer colors");
-    this.#requireIndex(index, this.capabilities.layerCount, "layer");
+    requireIndex(index, this.capabilities.layerCount, "layer");
     await transactAcknowledged(
       this.#transport,
       setHalcyonLayerStyleRequest(index, style),
@@ -81,7 +81,7 @@ class HalcyonSettingsClient {
 
   async getModifierStyle(index: number): Promise<Hsv> {
     this.#requireFlag(CAP_MOD_COLORS, "Halcyon modifier colors");
-    this.#requireIndex(index, this.capabilities.modifierCount, "modifier");
+    requireIndex(index, this.capabilities.modifierCount, "modifier");
     return transactDecoded(
       this.#transport,
       getHalcyonModifierStyleRequest(index),
@@ -91,7 +91,7 @@ class HalcyonSettingsClient {
 
   async setModifierStyle(index: number, color: Hsv): Promise<void> {
     this.#requireFlag(CAP_MOD_COLORS, "Halcyon modifier colors");
-    this.#requireIndex(index, this.capabilities.modifierCount, "modifier");
+    requireIndex(index, this.capabilities.modifierCount, "modifier");
     await transactAcknowledged(
       this.#transport,
       setHalcyonModifierStyleRequest(index, color),
