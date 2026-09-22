@@ -3,14 +3,14 @@ import type { KeyboardIdentity } from "../../transport.ts";
 import {
   createBrowserWebHidTransport,
   createWebHidTransport,
-  WebHidTransportError,
-  type WebHidConnectionEventPort,
+    type WebHidConnectionEventPort,
   type WebHidDevicePort,
   type WebHidDisconnectListener,
   type WebHidInputReportEventPort,
   type WebHidInputReportListener,
   type WebHidPort,
 } from "./WebHidTransport.ts";
+import { WebHidTransportError } from "./WebHidTypes.ts";
 
 interface FakeDevice {
   readonly port: WebHidDevicePort;
