@@ -1,7 +1,10 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
   "files": {
-    "includes": ["next/src/**/*.ts", "next/src/**/*.tsx"]
+    "includes": [
+      "next/src/**/*.ts",
+      "next/src/**/*.tsx"
+    ]
   },
   "formatter": {
     "enabled": false
@@ -15,7 +18,9 @@
   },
   "overrides": [
     {
-      "includes": ["next/src/**/*.tsx"],
+      "includes": [
+        "next/src/**/*.tsx"
+      ],
       "linter": {
         "rules": {
           "correctness": {
@@ -26,6 +31,9 @@
           },
           "suspicious": {
             "noReactSpecificProps": "off"
+          },
+          "performance": {
+            "useSolidForComponent": "off"
           }
         }
       }
