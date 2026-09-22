@@ -13,7 +13,10 @@
     "enabled": true,
     "rules": {
       "preset": "all",
-      "nursery": "error"
+      "nursery": "error",
+      "correctness": {
+        "useQwikValidLexicalScope": "off"
+      }
     }
   },
   "overrides": [
