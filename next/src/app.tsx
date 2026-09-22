@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 const capabilities = [
   "Standard Vial protocol",
   "xtreemze RGB profiles · 0xF0",
@@ -5,7 +7,7 @@ const capabilities = [
   "Halcyon TFT configuration · 0xF2",
 ] as const;
 
-export function App() {
+export function App(): ReactNode {
   return (
     <main className="app-shell">
       <section className="hero" aria-labelledby="app-title">
@@ -17,7 +19,7 @@ export function App() {
           implementation.
         </p>
 
-        <div className="connection-card" aria-labelledby="connection-title">
+        <section className="connection-card" aria-labelledby="connection-title">
           <div>
             <p className="label">Device</p>
             <h2 id="connection-title">No keyboard connected</h2>
@@ -28,7 +30,7 @@ export function App() {
           <button className="connect-button" type="button" disabled>
             Connect keyboard
           </button>
-        </div>
+        </section>
 
         <section aria-labelledby="capability-title">
           <p className="label" id="capability-title">
