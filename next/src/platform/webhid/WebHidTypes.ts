@@ -18,8 +18,12 @@ type WebHidTransportErrorCode =
 class WebHidTransportError extends Error {
   readonly code: WebHidTransportErrorCode;
 
-  constructor(code: WebHidTransportErrorCode, message: string) {
-    super(message);
+  constructor(
+    code: WebHidTransportErrorCode,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
     this.name = "WebHidTransportError";
     this.code = code;
   }
