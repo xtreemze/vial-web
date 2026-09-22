@@ -27,8 +27,7 @@
       "linter": {
         "rules": {
           "correctness": {
-            "noUnresolvedImports": "off",
-            "noSolidDestructuredProps": "off"
+            "noUnresolvedImports": "off"
           },
           "style": {
             "noJsxLiterals": "off"
