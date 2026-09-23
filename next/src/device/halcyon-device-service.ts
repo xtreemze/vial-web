@@ -203,14 +203,17 @@ class HalcyonDeviceService implements HalcyonDeviceController {
       identity,
     });
 
+    let opened = false;
     try {
       await this.#transport.open(identity);
+      opened = true;
       await this.probeExtensions();
       this.#publish({ status: "connected", identity });
     } catch (error: unknown) {
+      const physicallyDisconnected = opened && this.#transport.identity === null;
       this.#clearExtensions();
       await Promise.allSettled([this.#transport.close()]);
-      if (this.#transport.identity === null) {
+      if (physicallyDisconnected) {
         this.#publish({ status: "disconnected" });
       } else {
         this.#publish(errorState(operation, error, identity));
