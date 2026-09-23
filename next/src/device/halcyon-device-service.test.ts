@@ -23,8 +23,18 @@ interface FakeTransportHarness {
   readonly disconnect: () => void;
 }
 
-function createFakeTransport(responder: Responder): FakeTransportHarness {
+interface FakeTransportOptions {
+  readonly requestDeviceResults?: readonly (KeyboardIdentity | null)[];
+  readonly failOpenOnCall?: number;
+  readonly disconnectOnCommand?: number;
+}
+
+function createFakeTransport(
+  responder: Responder,
+  options: FakeTransportOptions = {},
+): FakeTransportHarness {
   let identity: KeyboardIdentity | null = null;
+  let requestDeviceCalls = 0;
   const requests: Uint8Array[] = [];
   const openCalls: KeyboardIdentity[] = [];
   let closeCalls = 0;
@@ -36,11 +46,19 @@ function createFakeTransport(responder: Responder): FakeTransportHarness {
       return identity;
     },
     support,
-    requestDevice: (): Promise<KeyboardIdentity | null> =>
-      Promise.resolve(IDENTITY),
+    requestDevice: (): Promise<KeyboardIdentity | null> => {
+      const result =
+        options.requestDeviceResults?.[requestDeviceCalls] ?? IDENTITY;
+      requestDeviceCalls += 1;
+      return Promise.resolve(result);
+    },
     open: (target?: KeyboardIdentity): Promise<void> => {
-      identity = target ?? IDENTITY;
-      openCalls.push(identity);
+      const nextIdentity = target ?? IDENTITY;
+      openCalls.push(nextIdentity);
+      if (options.failOpenOnCall === openCalls.length) {
+        return Promise.reject(new Error("Open failed"));
+      }
+      identity = nextIdentity;
       return Promise.resolve();
     },
     close: (): Promise<void> => {
@@ -50,6 +68,14 @@ function createFakeTransport(responder: Responder): FakeTransportHarness {
     },
     transact: (request: Uint8Array): Promise<Uint8Array> => {
       requests.push(Uint8Array.from(request));
+      if (options.disconnectOnCommand === request[0]) {
+        const previous = identity;
+        identity = null;
+        for (const listener of listeners) {
+          listener(previous);
+        }
+        return Promise.reject(new Error("Device disconnected"));
+      }
       return Promise.resolve(responder(request));
     },
     subscribeDisconnect: (
@@ -233,6 +259,76 @@ describe("HalcyonDeviceService", () => {
     ]);
 
     unsubscribe();
+  });
+
+
+  it("publishes permission cancellation as controller-owned error state", async () => {
+    const harness = createFakeTransport(capabilityResponder, {
+      requestDeviceResults: [null],
+    });
+    const service = new HalcyonDeviceService(harness.transport);
+
+    await expect(service.connect()).rejects.toThrow("No keyboard was selected");
+
+    expect(harness.openCalls).toHaveLength(0);
+    expect(service.getSnapshot().state).toMatchObject({
+      status: "error",
+      operation: "permission",
+    });
+  });
+
+  it("publishes open failures without leaving stale transport state", async () => {
+    const harness = createFakeTransport(capabilityResponder, {
+      failOpenOnCall: 1,
+    });
+    const service = new HalcyonDeviceService(harness.transport);
+
+    await expect(service.connect()).rejects.toThrow("Open failed");
+
+    expect(harness.closeCalls()).toBe(1);
+    expect(service.identity).toBeNull();
+    expect(service.getSnapshot().state).toMatchObject({
+      status: "error",
+      operation: "open",
+      identity: IDENTITY,
+    });
+  });
+
+  it("lands in disconnected state when the device disappears during probing", async () => {
+    const harness = createFakeTransport(capabilityResponder, {
+      disconnectOnCommand: 0xf1,
+    });
+    const service = new HalcyonDeviceService(harness.transport);
+
+    await expect(service.connect()).rejects.toThrow("Device disconnected");
+
+    expect(service.identity).toBeNull();
+    expect(service.extensions).toEqual({
+      rgbProfiles: null,
+      settings: null,
+      display: null,
+    });
+    expect(service.getSnapshot().state.status).toBe("disconnected");
+  });
+
+  it("labels reconnect failures separately and permits a later fresh connect", async () => {
+    const harness = createFakeTransport(capabilityResponder, {
+      requestDeviceResults: [IDENTITY, IDENTITY],
+      failOpenOnCall: 2,
+    });
+    const service = new HalcyonDeviceService(harness.transport);
+    await service.connect();
+    await service.disconnect();
+
+    await expect(service.reconnect(IDENTITY)).rejects.toThrow("Open failed");
+    expect(service.getSnapshot().state).toMatchObject({
+      status: "error",
+      operation: "reconnect",
+      identity: IDENTITY,
+    });
+
+    await expect(service.connect()).resolves.toEqual(IDENTITY);
+    expect(service.getSnapshot().state.status).toBe("connected");
   });
 
   it("delegates RGB writes to codecs and keeps save explicit", async () => {
