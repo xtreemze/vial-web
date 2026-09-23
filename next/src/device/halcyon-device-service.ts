@@ -52,6 +52,7 @@ interface HalcyonDeviceSessionSnapshot {
 interface HalcyonDeviceController {
   readonly support: KeyboardTransportSupport;
   readonly connect: () => Promise<KeyboardIdentity>;
+  readonly reconnect: (identity: KeyboardIdentity) => Promise<void>;
   readonly disconnect: () => Promise<void>;
   readonly getRgbProfileEditor: () => RgbProfileEditorController | null;
   readonly getSnapshot: () => HalcyonDeviceSessionSnapshot;
@@ -138,15 +139,13 @@ class HalcyonDeviceService implements HalcyonDeviceController {
       throw new DeviceSelectionError("No keyboard was selected");
     }
 
-    await this.#transport.open(identity);
-    await this.probeExtensions();
+    await this.#openAndProbe(identity);
     return identity;
   };
 
-  async reconnect(identity: KeyboardIdentity): Promise<void> {
-    await this.#transport.open(identity);
-    await this.probeExtensions();
-  }
+  readonly reconnect = async (identity: KeyboardIdentity): Promise<void> => {
+    await this.#openAndProbe(identity);
+  };
 
   readonly disconnect = async (): Promise<void> => {
     this.#clearExtensions();
@@ -156,6 +155,19 @@ class HalcyonDeviceService implements HalcyonDeviceController {
       this.#publishSession();
     }
   };
+
+  async #openAndProbe(identity: KeyboardIdentity): Promise<void> {
+    this.#clearExtensions();
+    try {
+      await this.#transport.open(identity);
+      await this.probeExtensions();
+    } catch (error: unknown) {
+      this.#clearExtensions();
+      await Promise.allSettled([this.#transport.close()]);
+      this.#publishSession();
+      throw error;
+    }
+  }
 
   async probeExtensions(): Promise<HalcyonExtensions> {
     const rgbCapabilities = await probeNamespace(
