@@ -83,6 +83,20 @@ class FakeController implements HalcyonDeviceController {
     return IDENTITY;
   };
 
+  readonly reconnect = (_identity: KeyboardIdentity): Promise<void> => {
+    this.#snapshot = {
+      status: "connected",
+      identity: IDENTITY,
+      extensionAvailability: {
+        rgbProfiles: true,
+        settings: true,
+        display: true,
+      },
+    };
+    this.#emit();
+    return Promise.resolve();
+  };
+
   readonly disconnect = async (): Promise<void> => {
     this.#snapshot = DISCONNECTED;
     this.#emit();

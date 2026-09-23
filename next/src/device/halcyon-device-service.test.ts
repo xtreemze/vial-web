@@ -19,6 +19,7 @@ interface FakeTransportHarness {
   readonly transport: KeyboardTransport;
   readonly requests: Uint8Array[];
   readonly openCalls: KeyboardIdentity[];
+  readonly closeCalls: () => number;
   readonly disconnect: () => void;
 }
 
@@ -26,6 +27,7 @@ function createFakeTransport(responder: Responder): FakeTransportHarness {
   let identity: KeyboardIdentity | null = null;
   const requests: Uint8Array[] = [];
   const openCalls: KeyboardIdentity[] = [];
+  let closeCalls = 0;
   const listeners = new Set<(identity: KeyboardIdentity | null) => void>();
   const support: KeyboardTransportSupport = { status: "supported" };
 
@@ -42,6 +44,7 @@ function createFakeTransport(responder: Responder): FakeTransportHarness {
       return Promise.resolve();
     },
     close: (): Promise<void> => {
+      closeCalls += 1;
       identity = null;
       return Promise.resolve();
     },
@@ -63,6 +66,7 @@ function createFakeTransport(responder: Responder): FakeTransportHarness {
     transport,
     requests,
     openCalls,
+    closeCalls: () => closeCalls,
     disconnect: (): void => {
       const previous = identity;
       identity = null;
@@ -107,6 +111,48 @@ describe("HalcyonDeviceService", () => {
     expect(service.extensions.rgbProfiles?.capabilities.layerCount).toBe(13);
     expect(service.extensions.settings?.capabilities.modifierCount).toBe(10);
     expect(service.extensions.display?.capabilities.layerLabelMaximum).toBe(8);
+  });
+
+  it("closes the device and clears clients when capability probing fails", async () => {
+    const harness = createFakeTransport((request: Uint8Array): Uint8Array => {
+      if (request[0] === 0xf1 && request[1] === 0x01) {
+        return Uint8Array.of(0xf1, 0x01, 1);
+      }
+      return capabilityResponder(request);
+    });
+    const service = new HalcyonDeviceService(harness.transport);
+
+    await expect(service.connect()).rejects.toThrow();
+
+    expect(harness.closeCalls()).toBe(1);
+    expect(service.identity).toBeNull();
+    expect(service.extensions).toEqual({
+      rgbProfiles: null,
+      settings: null,
+      display: null,
+    });
+    expect(service.getSnapshot()).toMatchObject({
+      status: "disconnected",
+      identity: null,
+      extensionAvailability: {
+        rgbProfiles: false,
+        settings: false,
+        display: false,
+      },
+    });
+  });
+
+  it("reconnects through the same atomic open-and-probe path", async () => {
+    const harness = createFakeTransport(capabilityResponder);
+    const service = new HalcyonDeviceService(harness.transport);
+    await service.connect();
+    await service.disconnect();
+
+    await service.reconnect(IDENTITY);
+
+    expect(harness.openCalls).toEqual([IDENTITY, IDENTITY]);
+    expect(service.getSnapshot().status).toBe("connected");
+    expect(service.extensions.display).not.toBeNull();
   });
 
   it("treats an unacknowledged namespace as unavailable without hiding malformed active responses", async () => {
