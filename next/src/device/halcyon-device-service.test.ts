@@ -47,8 +47,11 @@ function createFakeTransport(
     },
     support,
     requestDevice: (): Promise<KeyboardIdentity | null> => {
+      const configured = options.requestDeviceResults;
       const result =
-        options.requestDeviceResults?.[requestDeviceCalls] ?? IDENTITY;
+        configured === undefined
+          ? IDENTITY
+          : (configured[requestDeviceCalls] ?? null);
       requestDeviceCalls += 1;
       return Promise.resolve(result);
     },
