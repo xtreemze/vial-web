@@ -24,8 +24,7 @@ const IDENTITY: KeyboardIdentity = {
 };
 
 const DISCONNECTED: HalcyonDeviceSessionSnapshot = {
-  status: "disconnected",
-  identity: null,
+  state: { status: "disconnected" },
   extensionAvailability: {
     rgbProfiles: false,
     settings: false,
@@ -58,7 +57,7 @@ class FakeController implements HalcyonDeviceController {
   #snapshot: HalcyonDeviceSessionSnapshot = DISCONNECTED;
 
   readonly getRgbProfileEditor = (): RgbProfileEditorController | null =>
-    this.#snapshot.status === "connected" ? FAKE_RGB_PROFILE_EDITOR : null;
+    this.#snapshot.state.status === "connected" ? FAKE_RGB_PROFILE_EDITOR : null;
 
   readonly getSnapshot = (): HalcyonDeviceSessionSnapshot => this.#snapshot;
 
@@ -71,8 +70,10 @@ class FakeController implements HalcyonDeviceController {
 
   readonly connect = async (): Promise<KeyboardIdentity> => {
     this.#snapshot = {
-      status: "connected",
-      identity: IDENTITY,
+      state: {
+        status: "connected",
+        identity: IDENTITY,
+      },
       extensionAvailability: {
         rgbProfiles: true,
         settings: true,
@@ -85,8 +86,10 @@ class FakeController implements HalcyonDeviceController {
 
   readonly reconnect = (_identity: KeyboardIdentity): Promise<void> => {
     this.#snapshot = {
-      status: "connected",
-      identity: IDENTITY,
+      state: {
+        status: "connected",
+        identity: IDENTITY,
+      },
       extensionAvailability: {
         rgbProfiles: true,
         settings: true,
