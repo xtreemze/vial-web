@@ -1,22 +1,10 @@
-import {
-  type ReactNode,
-  useId,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { type ReactNode, useId, useSyncExternalStore } from "react";
 
 import type { HalcyonDeviceController } from "./device/halcyon-device-service.ts";
 import { RgbProfileEditor } from "./rgb-profile-editor.tsx";
 
 interface AppProps {
   readonly controller: HalcyonDeviceController;
-}
-
-function describeError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "The keyboard operation failed.";
 }
 
 function availabilityLabel(available: boolean, connected: boolean): string {
@@ -48,23 +36,37 @@ export function App({ controller }: AppProps): ReactNode {
     controller.getSnapshot,
     controller.getSnapshot,
   );
-  const [busy, setBusy] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const connected = snapshot.status === "connected";
+  const state = snapshot.state;
+  const connected = state.status === "connected";
+  const busy =
+    state.status === "requesting-permission" ||
+    state.status === "opening" ||
+    state.status === "reconnecting" ||
+    state.status === "disconnecting";
   const unsupportedMessage = supportMessage(controller);
   const rgbProfileEditor = connected ? controller.getRgbProfileEditor() : null;
+  const identity = "identity" in state ? state.identity : undefined;
 
   let heading = "No keyboard connected";
-  if (snapshot.identity?.productName !== undefined) {
-    heading = snapshot.identity.productName;
+  if (identity?.productName !== undefined) {
+    heading = identity.productName;
   } else if (connected) {
     heading = "Keyboard connected";
   }
 
   let detail = "Choose a compatible Vial keyboard to begin.";
-  if (connected) {
+  if (state.status === "requesting-permission") {
+    detail = "Choose a compatible keyboard in the browser permission prompt.";
+  } else if (state.status === "opening") {
+    detail = "Opening the keyboard and probing protocol capabilities.";
+  } else if (state.status === "reconnecting") {
+    detail = "Reopening the previously granted keyboard.";
+  } else if (state.status === "disconnecting") {
+    detail = "Closing the keyboard connection.";
+  } else if (connected) {
     detail = "Custom protocol capabilities were probed from the connected keyboard.";
+  } else if (state.status === "error") {
+    detail = state.message;
   } else if (unsupportedMessage !== null) {
     detail = unsupportedMessage;
   }
@@ -72,24 +74,25 @@ export function App({ controller }: AppProps): ReactNode {
   let actionLabel = "Connect keyboard";
   if (connected) {
     actionLabel = "Disconnect keyboard";
-  }
-  if (busy) {
-    actionLabel = connected ? "Disconnecting…" : "Connecting…";
+  } else if (state.status === "requesting-permission") {
+    actionLabel = "Requesting permission…";
+  } else if (state.status === "opening") {
+    actionLabel = "Connecting…";
+  } else if (state.status === "reconnecting") {
+    actionLabel = "Reconnecting…";
+  } else if (state.status === "disconnecting") {
+    actionLabel = "Disconnecting…";
   }
 
   async function handleConnectionAction(_formData: FormData): Promise<void> {
-    setBusy(true);
-    setErrorMessage(null);
     try {
       if (connected) {
         await controller.disconnect();
       } else {
         await controller.connect();
       }
-    } catch (error: unknown) {
-      setErrorMessage(describeError(error));
-    } finally {
-      setBusy(false);
+    } catch {
+      return;
     }
   }
 
@@ -113,14 +116,13 @@ export function App({ controller }: AppProps): ReactNode {
           <div>
             <p className="label">Device</p>
             <h2 id={connectionTitleId}>{heading}</h2>
-            <p className="muted" aria-live="polite">
+            <p
+              className={state.status === "error" ? "error-message" : "muted"}
+              aria-live="polite"
+              role={state.status === "error" ? "alert" : undefined}
+            >
               {detail}
             </p>
-            {errorMessage === null ? null : (
-              <p className="error-message" role="alert">
-                {errorMessage}
-              </p>
-            )}
           </div>
           <button
             className="connect-button"

@@ -1,19 +1,22 @@
+import type { KeyboardIdentity } from "./transport.ts";
+
+export type DeviceOperation =
+  | "permission"
+  | "open"
+  | "transact"
+  | "reconnect"
+  | "disconnect";
+
 export type DeviceState =
   | { readonly status: "disconnected" }
   | { readonly status: "requesting-permission" }
-  | { readonly status: "opening"; readonly identity: DeviceIdentity }
-  | { readonly status: "connected"; readonly identity: DeviceIdentity }
-  | { readonly status: "reconnecting"; readonly identity: DeviceIdentity }
+  | { readonly status: "opening"; readonly identity: KeyboardIdentity }
+  | { readonly status: "connected"; readonly identity: KeyboardIdentity }
+  | { readonly status: "reconnecting"; readonly identity: KeyboardIdentity }
+  | { readonly status: "disconnecting"; readonly identity: KeyboardIdentity }
   | {
       readonly status: "error";
-      readonly identity?: DeviceIdentity;
-      readonly operation: "permission" | "open" | "transact" | "reconnect";
+      readonly identity?: KeyboardIdentity;
+      readonly operation: DeviceOperation;
       readonly message: string;
     };
-
-export interface DeviceIdentity {
-  readonly vendorId: number;
-  readonly productId: number;
-  readonly productName?: string;
-  readonly serialNumber?: string;
-}
