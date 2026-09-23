@@ -110,6 +110,18 @@ class FakeController implements HalcyonDeviceController {
     this.#emit();
   }
 
+  simulateError(message: string): void {
+    this.#snapshot = {
+      state: {
+        status: "error",
+        operation: "open",
+        message,
+      },
+      extensionAvailability: DISCONNECTED.extensionAvailability,
+    };
+    this.#emit();
+  }
+
   #emit(): void {
     for (const listener of this.#listeners) {
       listener();
@@ -143,6 +155,20 @@ describe("App", () => {
     expect(
       await screen.findByRole("heading", { level: 2, name: "Lighting profile" }),
     ).toBeTruthy();
+  });
+
+  it("renders controller-owned lifecycle errors without local duplicate state", async () => {
+    const controller = new FakeController();
+    render(<App controller={controller} />);
+
+    controller.simulateError("Capability probe failed");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Capability probe failed",
+    );
+    expect(
+      screen.getByRole("button", { name: "Connect keyboard" }),
+    ).toHaveProperty("disabled", false);
   });
 
   it("returns to disconnected UI when the service reports physical disconnect", async () => {
