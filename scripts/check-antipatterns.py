@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SCAN_ROOTS = (ROOT / "src", ROOT / "next" / "src")
 SUFFIXES = {".css", ".html", ".js", ".jsx", ".ts", ".tsx"}
 EXCLUDED = {ROOT / "src" / "simpleeval.py"}
+WORKFLOW_DIR = ROOT / ".github" / "workflows"
+WORKFLOW_USES = re.compile(r"(?m)^\\s*uses:\\s*([^\\s#]+)")
+FULL_COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 
 RULES = (
     (
@@ -108,6 +111,17 @@ def iter_files() -> list[Path]:
 
 def main() -> int:
     violations: list[str] = []
+    for workflow in sorted((*WORKFLOW_DIR.glob("*.yml"), *WORKFLOW_DIR.glob("*.yaml"))):
+        source = workflow.read_text(encoding="utf-8")
+        for action in WORKFLOW_USES.findall(source):
+            if action.startswith("./") or action.startswith("docker://"):
+                continue
+            if "@" not in action or not FULL_COMMIT_SHA.fullmatch(action.rsplit("@", 1)[1]):
+                violations.append(
+                    f"{workflow.relative_to(ROOT)}: workflow-action-pin: "
+                    f"{action} must use a full immutable commit SHA"
+                )
+
     for path in iter_files():
         text = path.read_text(encoding="utf-8")
         relative = path.relative_to(ROOT)
