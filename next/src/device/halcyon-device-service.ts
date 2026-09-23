@@ -1,14 +1,10 @@
-import type {
-  KeyboardIdentity,
-  KeyboardTransport,
-  KeyboardTransportSupport,
-} from "../transport.ts";
+import type { DeviceOperation, DeviceState } from "../device-state.ts";
 import {
-  decodeRgbProfileCapabilities,
-  getRgbProfileCapabilitiesRequest,
-  RGB_PROFILE_COMMAND,
-  RGB_PROFILE_OPERATIONS,
-} from "../protocol/rgb-profile-codec.ts";
+  decodeHalcyonDisplayCapabilities,
+  getHalcyonDisplayCapabilitiesRequest,
+  HALCYON_DISPLAY_COMMAND,
+  HALCYON_DISPLAY_OPERATIONS,
+} from "../protocol/halcyon-display-codec.ts";
 import {
   decodeHalcyonSettingsCapabilities,
   getHalcyonSettingsCapabilitiesRequest,
@@ -16,11 +12,16 @@ import {
   HALCYON_SETTINGS_OPERATIONS,
 } from "../protocol/halcyon-settings-codec.ts";
 import {
-  decodeHalcyonDisplayCapabilities,
-  getHalcyonDisplayCapabilitiesRequest,
-  HALCYON_DISPLAY_COMMAND,
-  HALCYON_DISPLAY_OPERATIONS,
-} from "../protocol/halcyon-display-codec.ts";
+  decodeRgbProfileCapabilities,
+  getRgbProfileCapabilitiesRequest,
+  RGB_PROFILE_COMMAND,
+  RGB_PROFILE_OPERATIONS,
+} from "../protocol/rgb-profile-codec.ts";
+import type {
+  KeyboardIdentity,
+  KeyboardTransport,
+  KeyboardTransportSupport,
+} from "../transport.ts";
 import { DeviceSelectionError } from "./device-service-errors.ts";
 import { probeNamespace } from "./device-service-transport.ts";
 import { HalcyonDisplayClient } from "./halcyon-display-client.ts";
@@ -44,8 +45,7 @@ interface HalcyonExtensionAvailability {
 }
 
 interface HalcyonDeviceSessionSnapshot {
-  readonly status: "disconnected" | "connected";
-  readonly identity: KeyboardIdentity | null;
+  readonly state: DeviceState;
   readonly extensionAvailability: HalcyonExtensionAvailability;
 }
 
@@ -81,6 +81,25 @@ function availabilityFromExtensions(
   };
 }
 
+function describeError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "The keyboard operation failed.";
+}
+
+function errorState(
+  operation: DeviceOperation,
+  error: unknown,
+  identity?: KeyboardIdentity,
+): DeviceState {
+  const message = describeError(error);
+  if (identity === undefined) {
+    return { status: "error", operation, message };
+  }
+  return { status: "error", operation, message, identity };
+}
+
 class HalcyonDeviceService implements HalcyonDeviceController {
   readonly #transport: KeyboardTransport;
   readonly #unsubscribeDisconnect: () => void;
@@ -88,8 +107,7 @@ class HalcyonDeviceService implements HalcyonDeviceController {
   #extensions: HalcyonExtensions = EMPTY_EXTENSIONS;
   #rgbProfileEditor: RgbProfileEditorController | null = null;
   #snapshot: HalcyonDeviceSessionSnapshot = {
-    status: "disconnected",
-    identity: null,
+    state: { status: "disconnected" },
     extensionAvailability: EMPTY_AVAILABILITY,
   };
 
@@ -98,7 +116,7 @@ class HalcyonDeviceService implements HalcyonDeviceController {
     this.#unsubscribeDisconnect = transport.subscribeDisconnect(
       (_identity: KeyboardIdentity | null): void => {
         this.#clearExtensions();
-        this.#publishSession();
+        this.#publish({ status: "disconnected" });
       },
     );
   }
@@ -129,42 +147,74 @@ class HalcyonDeviceService implements HalcyonDeviceController {
 
   readonly connect = async (): Promise<KeyboardIdentity> => {
     if (this.#transport.support.status !== "supported") {
-      throw new DeviceSelectionError(
+      const error = new DeviceSelectionError(
         `Keyboard transport is unavailable: ${this.#transport.support.reason}`,
       );
+      this.#publish(errorState("permission", error));
+      throw error;
     }
 
-    const identity = await this.#transport.requestDevice();
+    this.#publish({ status: "requesting-permission" });
+
+    let identity: KeyboardIdentity | null;
+    try {
+      identity = await this.#transport.requestDevice();
+    } catch (error: unknown) {
+      this.#publish(errorState("permission", error));
+      throw error;
+    }
+
     if (identity === null) {
-      throw new DeviceSelectionError("No keyboard was selected");
+      const error = new DeviceSelectionError("No keyboard was selected");
+      this.#publish(errorState("permission", error));
+      throw error;
     }
 
-    await this.#openAndProbe(identity);
+    await this.#openAndProbe(identity, "open");
     return identity;
   };
 
   readonly reconnect = async (identity: KeyboardIdentity): Promise<void> => {
-    await this.#openAndProbe(identity);
+    await this.#openAndProbe(identity, "reconnect");
   };
 
   readonly disconnect = async (): Promise<void> => {
+    const identity = this.#transport.identity;
     this.#clearExtensions();
+
+    if (identity !== null) {
+      this.#publish({ status: "disconnecting", identity });
+    }
+
     try {
       await this.#transport.close();
     } finally {
-      this.#publishSession();
+      this.#publish({ status: "disconnected" });
     }
   };
 
-  async #openAndProbe(identity: KeyboardIdentity): Promise<void> {
+  async #openAndProbe(
+    identity: KeyboardIdentity,
+    operation: "open" | "reconnect",
+  ): Promise<void> {
     this.#clearExtensions();
+    this.#publish({
+      status: operation === "reconnect" ? "reconnecting" : "opening",
+      identity,
+    });
+
     try {
       await this.#transport.open(identity);
       await this.probeExtensions();
+      this.#publish({ status: "connected", identity });
     } catch (error: unknown) {
       this.#clearExtensions();
       await Promise.allSettled([this.#transport.close()]);
-      this.#publishSession();
+      if (this.#transport.identity === null) {
+        this.#publish({ status: "disconnected" });
+      } else {
+        this.#publish(errorState(operation, error, identity));
+      }
       throw error;
     }
   }
@@ -210,7 +260,6 @@ class HalcyonDeviceService implements HalcyonDeviceController {
     };
     this.#rgbProfileEditor =
       rgbProfiles === null ? null : new DeviceRgbProfileEditorController(rgbProfiles);
-    this.#publishSession();
     return this.#extensions;
   }
 
@@ -225,16 +274,9 @@ class HalcyonDeviceService implements HalcyonDeviceController {
     this.#rgbProfileEditor = null;
   }
 
-  #publishSession(): void {
-    const identity = this.#transport.identity;
-    let status: HalcyonDeviceSessionSnapshot["status"] = "disconnected";
-    if (identity !== null) {
-      status = "connected";
-    }
-
+  #publish(state: DeviceState): void {
     this.#snapshot = {
-      status,
-      identity,
+      state,
       extensionAvailability: availabilityFromExtensions(this.#extensions),
     };
 
