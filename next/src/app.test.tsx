@@ -163,7 +163,7 @@ describe("App", () => {
 
     controller.simulateError("Capability probe failed");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect((await screen.findByRole("alert")).textContent).toBe(
       "Capability probe failed",
     );
     expect(
