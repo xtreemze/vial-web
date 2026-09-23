@@ -66,7 +66,7 @@ function createFakeTransport(responder: Responder): FakeTransportHarness {
     transport,
     requests,
     openCalls,
-    closeCalls: (): number => closeCalls,
+    closeCalls: () => closeCalls,
     disconnect: (): void => {
       const previous = identity;
       identity = null;
