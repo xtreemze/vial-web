@@ -132,8 +132,11 @@ describe("HalcyonDeviceService", () => {
       display: null,
     });
     expect(service.getSnapshot()).toMatchObject({
-      status: "disconnected",
-      identity: null,
+      state: {
+        status: "error",
+        operation: "open",
+        identity: IDENTITY,
+      },
       extensionAvailability: {
         rgbProfiles: false,
         settings: false,
@@ -151,7 +154,7 @@ describe("HalcyonDeviceService", () => {
     await service.reconnect(IDENTITY);
 
     expect(harness.openCalls).toEqual([IDENTITY, IDENTITY]);
-    expect(service.getSnapshot().status).toBe("connected");
+    expect(service.getSnapshot().state.status).toBe("connected");
     expect(service.extensions.display).not.toBeNull();
   });
 
@@ -191,16 +194,18 @@ describe("HalcyonDeviceService", () => {
     const service = new HalcyonDeviceService(harness.transport);
     const statuses: string[] = [];
     const unsubscribe = service.subscribe((): void => {
-      statuses.push(service.getSnapshot().status);
+      statuses.push(service.getSnapshot().state.status);
     });
 
-    expect(service.getSnapshot().status).toBe("disconnected");
+    expect(service.getSnapshot().state.status).toBe("disconnected");
 
     await service.connect();
 
     expect(service.getSnapshot()).toMatchObject({
-      status: "connected",
-      identity: IDENTITY,
+      state: {
+        status: "connected",
+        identity: IDENTITY,
+      },
       extensionAvailability: {
         rgbProfiles: true,
         settings: true,
@@ -211,15 +216,21 @@ describe("HalcyonDeviceService", () => {
     harness.disconnect();
 
     expect(service.getSnapshot()).toMatchObject({
-      status: "disconnected",
-      identity: null,
+      state: {
+        status: "disconnected",
+      },
       extensionAvailability: {
         rgbProfiles: false,
         settings: false,
         display: false,
       },
     });
-    expect(statuses).toEqual(["connected", "disconnected"]);
+    expect(statuses).toEqual([
+      "requesting-permission",
+      "opening",
+      "connected",
+      "disconnected",
+    ]);
 
     unsubscribe();
   });
