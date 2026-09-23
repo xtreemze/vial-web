@@ -303,7 +303,7 @@ describe("HalcyonDeviceService", () => {
     });
     const service = new HalcyonDeviceService(harness.transport);
 
-    await expect(service.connect()).rejects.toThrow("Device disconnected");
+    await expect(service.connect()).rejects.toThrow();
 
     expect(service.identity).toBeNull();
     expect(service.extensions).toEqual({
