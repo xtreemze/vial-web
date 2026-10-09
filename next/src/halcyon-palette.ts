@@ -44,12 +44,13 @@ export function generatePalette(
 ): HalcyonPalettePlan {
   const entries: PaletteEntry[] = [];
   const counts = [1, rgb.layerCount, rgb.modifierCount, rgb.comboCount] as const;
-  for (let scope = 0; scope < counts.length; scope++) {
+  const scopes: readonly RgbProfileScope[] = [0, 1, 2, 3];
+  for (const scope of scopes) {
     if ((rgb.scopeFlags & (1 << scope)) === 0) continue;
     for (let index = 0; index < counts[scope]; index++) {
       const color = colorFor(index + (scope === 1 ? 0 : scope * 29));
       entries.push({
-        scope: scope as RgbProfileScope, index,
+        scope, index,
         rgb: { mode: Math.min(1, rgb.maximumMode), hue: color.hue,
           saturation: color.saturation, brightness: Math.min(color.value, rgb.maximumBrightness), speed: 128 },
       });
