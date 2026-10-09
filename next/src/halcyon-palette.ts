@@ -31,10 +31,10 @@ export interface PaletteSnapshot {
   readonly tftLayers: HalcyonPalettePlan["tftLayers"];
   readonly tftModifiers: HalcyonPalettePlan["tftModifiers"];
 }
-const hueFor = (index: number, count: number): number =>
+const hueFor = (index: number): number =>
   Math.round(((index * 137.507764 + 12) % 360) * 255 / 360) % 256;
-const colorFor = (index: number, count: number): Hsv => ({
-  hue: hueFor(index, count), saturation: 210, value: 220,
+const colorFor = (index: number): Hsv => ({
+  hue: hueFor(index), saturation: 210, value: 220,
 });
 
 /** All counts and supported scopes come from the device, never keyboard names. */
@@ -47,7 +47,7 @@ export function generatePalette(
   for (let scope = 0; scope < counts.length; scope++) {
     if ((rgb.scopeFlags & (1 << scope)) === 0) continue;
     for (let index = 0; index < counts[scope]; index++) {
-      const color = colorFor(index + (scope === 1 ? 0 : scope * 29), counts[scope]);
+      const color = colorFor(index + (scope === 1 ? 0 : scope * 29));
       entries.push({
         scope: scope as RgbProfileScope, index,
         rgb: { mode: Math.min(1, rgb.maximumMode), hue: color.hue,
@@ -59,12 +59,12 @@ export function generatePalette(
   // by mergePaletteWithCurrent instead of overwriting unrelated display fields.
   const tftLayers = tft && (tft.flags & 1)
     ? Array.from({ length: tft.layerCount }, (_, index) => ({
-        index, style: { foreground: colorFor(index, tft.layerCount), background: { hue: 0, saturation: 0, value: 12 } },
+        index, style: { foreground: colorFor(index), background: { hue: 0, saturation: 0, value: 12 } },
       }))
     : [];
   const tftModifiers = tft && (tft.flags & 2)
     ? Array.from({ length: tft.modifierCount }, (_, index) => ({
-        index, color: colorFor(index + 58, tft.modifierCount),
+        index, color: colorFor(index + 58),
       }))
     : [];
   return { version: 1, rgb: entries, tftLayers, tftModifiers };
