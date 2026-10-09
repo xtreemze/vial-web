@@ -93,8 +93,8 @@ async function applyPalettePlan(plan: PalettePlan, rgb: RgbPort, tft: TftPort | 
     for (const target of plan.rgb) {
       const previous = await rgb.getProfile(target.scope, target.index);
       if (same(previous, target.rgb)) continue;
-      await rgb.setProfile(target.scope, target.index, target.rgb);
       undo.push(() => rgb.setProfile(target.scope, target.index, previous));
+      await rgb.setProfile(target.scope, target.index, target.rgb);
       const actual = await rgb.getProfile(target.scope, target.index);
       if (!same(actual, target.rgb)) throw new Error("RGB profile readback mismatch");
     }
@@ -105,15 +105,15 @@ async function applyPalettePlan(plan: PalettePlan, rgb: RgbPort, tft: TftPort | 
       for (const { index, style } of plan.tftLayers) {
         const previous = await tft.getLayerStyle(index);
         if (same(previous, style)) continue;
-        await tft.setLayerStyle(index, style);
         undo.push(() => tft.setLayerStyle(index, previous));
+        await tft.setLayerStyle(index, style);
         if (!same(await tft.getLayerStyle(index), style)) throw new Error("TFT layer readback mismatch");
       }
       for (const { index, color } of plan.tftModifiers) {
         const previous = await tft.getModifierStyle(index);
         if (same(previous, color)) continue;
-        await tft.setModifierStyle(index, color);
         undo.push(() => tft.setModifierStyle(index, previous));
+        await tft.setModifierStyle(index, color);
         if (!same(await tft.getModifierStyle(index), color)) throw new Error("TFT modifier readback mismatch");
       }
     }
