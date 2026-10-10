@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { applyPalette, generatePalette, restorePalette, snapshotPalette } from "./halcyon-palette.ts";
+import { applyPalette, applyVerifiedPalette, generatePalette, restorePalette, saveVerifiedPalette, snapshotPalette } from "./halcyon-palette.ts";
 import type { RgbProfileCapabilities } from "./protocol/rgb-profile-codec.ts";
 
 const caps: RgbProfileCapabilities = {
@@ -58,4 +58,41 @@ describe("Halcyon batch palette", () => {
     expect(rgb.setProfile).toHaveBeenLastCalledWith(1, 0, original);
     expect(tft.setLayerStyle).toHaveBeenLastCalledWith(0, layerStyle);
   });
+  it("verifies runtime writes before any durable save", async () => {
+    const state = new Map<string, typeof original>();
+    const rgb = {
+      capabilities: caps,
+      getProfile: vi.fn(async (scope: number, index: number) =>
+        state.get(`${scope}:${index}`) ?? original),
+      setProfile: vi.fn(async (scope: number, index: number, value: typeof original) => {
+        state.set(`${scope}:${index}`, value);
+      }),
+      save: vi.fn(async () => undefined),
+    };
+    const plan = generatePalette({ ...caps, scopeFlags: 2, layerCount: 2 });
+    const previous = await applyVerifiedPalette(rgb, undefined, plan);
+    expect(rgb.save).not.toHaveBeenCalled();
+    await saveVerifiedPalette(rgb, undefined, plan, previous);
+    expect(rgb.save).toHaveBeenCalledTimes(1);
+  });
+  it("restores original RGB settings when readback fails", async () => {
+    const state = new Map<string, typeof original>();
+    const rgb = {
+      capabilities: caps,
+      getProfile: vi.fn(async (scope: number, index: number) =>
+        state.get(`${scope}:${index}`) ?? original),
+      setProfile: vi.fn(async (scope: number, index: number, value: typeof original) => {
+        // Simulate an acknowledged write that the device fails to apply.
+        if (index !== 1 || value.hue === original.hue) {
+          state.set(`${scope}:${index}`, value);
+        }
+      }),
+      save: vi.fn(async () => undefined),
+    };
+    const plan = generatePalette({ ...caps, scopeFlags: 2, layerCount: 2 });
+    await expect(applyVerifiedPalette(rgb, undefined, plan)).rejects.toThrow("readback mismatch");
+    expect(state.get("1:0")).toEqual(original);
+    expect(rgb.save).not.toHaveBeenCalled();
+  });
+
 });
