@@ -1,3 +1,4 @@
+import type { PalettePorts } from "../palette-editor.tsx";
 import type { DeviceOperation, DeviceState } from "../device-state.ts";
 import {
   decodeHalcyonDisplayCapabilities,
@@ -54,6 +55,7 @@ interface HalcyonDeviceController {
   readonly connect: () => Promise<KeyboardIdentity>;
   readonly reconnect: (identity: KeyboardIdentity) => Promise<void>;
   readonly disconnect: () => Promise<void>;
+  readonly getPalettePorts?: () => PalettePorts | null;
   readonly getRgbProfileEditor: () => RgbProfileEditorController | null;
   readonly getSnapshot: () => HalcyonDeviceSessionSnapshot;
   readonly subscribe: (listener: () => void) => () => void;
@@ -133,6 +135,87 @@ class HalcyonDeviceService implements HalcyonDeviceController {
     return this.#extensions;
   }
 
+  readonly getPalettePorts = (): PalettePorts | null => {
+    const extensions = this.#extensions;
+    if (!extensions.rgbProfiles) return null;
+    const check = (): void => {
+      if (this.#extensions !== extensions)
+        throw new Error(
+          "Keyboard session changed; reconnect and regenerate palette",
+        );
+    };
+    const rgb = extensions.rgbProfiles;
+    const tft = extensions.settings;
+    return {
+      rgb: {
+        capabilities: rgb.capabilities,
+        getProfile: (
+          ...[s, i]: Parameters<PalettePorts["rgb"]["getProfile"]>
+        ): ReturnType<PalettePorts["rgb"]["getProfile"]> => {
+          check();
+          return rgb.getProfile(s, i);
+        },
+        setProfile: (
+          ...[s, i, p]: Parameters<PalettePorts["rgb"]["setProfile"]>
+        ): Promise<void> => {
+          check();
+          return rgb.setProfile(s, i, p);
+        },
+        save: (): Promise<void> => {
+          check();
+          return rgb.save();
+        },
+      },
+      ...(tft
+        ? {
+            tft: {
+              capabilities: tft.capabilities,
+              getLayerStyle: (
+                ...[i]: Parameters<
+                  NonNullable<PalettePorts["tft"]>["getLayerStyle"]
+                >
+              ): ReturnType<
+                NonNullable<PalettePorts["tft"]>["getLayerStyle"]
+              > => {
+                check();
+                return tft.getLayerStyle(i);
+              },
+              setLayerStyle: (
+                ...[i, p]: Parameters<
+                  NonNullable<PalettePorts["tft"]>["setLayerStyle"]
+                >
+              ): Promise<void> => {
+                check();
+                return tft.setLayerStyle(i, p);
+              },
+              getModifierStyle: (
+                ...[i]: Parameters<
+                  NonNullable<PalettePorts["tft"]>["getModifierStyle"]
+                >
+              ): ReturnType<
+                NonNullable<PalettePorts["tft"]>["getModifierStyle"]
+              > => {
+                check();
+                return tft.getModifierStyle(i);
+              },
+              setModifierStyle: (
+                ...[i, p]: Parameters<
+                  NonNullable<PalettePorts["tft"]>["setModifierStyle"]
+                >
+              ): Promise<void> => {
+                check();
+                return tft.setModifierStyle(i, p);
+              },
+              save: (): Promise<void> => {
+                check();
+                return tft.save();
+              },
+            },
+          }
+        : {}),
+    };
+  };
+
   readonly getRgbProfileEditor = (): RgbProfileEditorController | null =>
     this.#rgbProfileEditor;
 
@@ -210,7 +293,8 @@ class HalcyonDeviceService implements HalcyonDeviceController {
       await this.probeExtensions();
       this.#publish({ status: "connected", identity });
     } catch (error: unknown) {
-      const physicallyDisconnected = opened && this.#transport.identity === null;
+      const physicallyDisconnected =
+        opened && this.#transport.identity === null;
       this.#clearExtensions();
       await Promise.allSettled([this.#transport.close()]);
       if (physicallyDisconnected) {
@@ -262,7 +346,9 @@ class HalcyonDeviceService implements HalcyonDeviceController {
           : new HalcyonDisplayClient(this.#transport, displayCapabilities),
     };
     this.#rgbProfileEditor =
-      rgbProfiles === null ? null : new DeviceRgbProfileEditorController(rgbProfiles);
+      rgbProfiles === null
+        ? null
+        : new DeviceRgbProfileEditorController(rgbProfiles);
     return this.#extensions;
   }
 
