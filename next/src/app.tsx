@@ -1,4 +1,5 @@
-import { type ReactNode, useId, useSyncExternalStore } from "react";
+import { PaletteEditor } from "./palette-editor.tsx";
+import { type ReactNode, useId, useState, useSyncExternalStore } from "react";
 
 import type { HalcyonDeviceController } from "./device/halcyon-device-service.ts";
 import { RgbProfileEditor } from "./rgb-profile-editor.tsx";
@@ -28,6 +29,7 @@ function supportMessage(controller: HalcyonDeviceController): string | null {
 }
 
 export function App({ controller }: AppProps): ReactNode {
+  const [paletteBusy, setPaletteBusy] = useState(false);
   const appTitleId = useId();
   const connectionTitleId = useId();
   const capabilityTitleId = useId();
@@ -64,7 +66,8 @@ export function App({ controller }: AppProps): ReactNode {
   } else if (state.status === "disconnecting") {
     detail = "Closing the keyboard connection.";
   } else if (connected) {
-    detail = "Custom protocol capabilities were probed from the connected keyboard.";
+    detail =
+      "Custom protocol capabilities were probed from the connected keyboard.";
   } else if (state.status === "error") {
     detail = state.message;
   } else if (unsupportedMessage !== null) {
@@ -96,7 +99,8 @@ export function App({ controller }: AppProps): ReactNode {
     }
   }
 
-  const actionDisabled = busy || unsupportedMessage !== null;
+  const palettePorts = connected ? controller.getPalettePorts?.() : null;
+  const actionDisabled = paletteBusy || busy || unsupportedMessage !== null;
 
   return (
     <main className="app-shell">
@@ -168,9 +172,14 @@ export function App({ controller }: AppProps): ReactNode {
           </ul>
         </section>
 
-        {rgbProfileEditor === null ? null : (
-          <RgbProfileEditor controller={rgbProfileEditor} />
+        {palettePorts && (
+          <PaletteEditor ports={palettePorts} onBusy={setPaletteBusy} />
         )}
+        <fieldset disabled={paletteBusy}>
+          {rgbProfileEditor === null ? null : (
+            <RgbProfileEditor controller={rgbProfileEditor} />
+          )}
+        </fieldset>
       </section>
     </main>
   );
